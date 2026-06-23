@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🥙 Döner King — Dein eigener Laden</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #1a0a00;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  user-select: none;
+}
+#game {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── OUTSIDE WINDOW ─────────────────────────────── */
+#outside {
+  height: 20%;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 10px solid #5c3a1e;
+  background: linear-gradient(180deg, #87CEEB 0%, #b0dff5 65%, #90c060 65%, #6fa040 100%);
+  flex-shrink: 0;
+}
+.window-bar-h {
+  position: absolute;
+  left: 0; right: 0;
+  height: 10px;
+  background: #5c3a1e;
+}
+.window-bar-h.top { top: 0; }
+.window-bar-h.mid { top: 50%; }
+.window-bar-v {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 10px;
+  background: #5c3a1e;
+}
+.window-bar-v.v1 { left: 33%; }
+.window-bar-v.v2 { left: 66%; }
+.cloud {
+  position: absolute;
+  background: white;
+  border-radius: 50px;
+  opacity: 0.85;
+  animation: cloudMove linear infinite;
+}
+.cloud::before, .cloud::after {
+  content: '';
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+}
+@keyframes cloudMove {
+  from { transform: translateX(-200px); }
+  to   { transform: translateX(110vw); }
+}
+.road {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 32%;
+  background: #555;
+  border-top: 3px solid #aaa;
+}
+.road-stripe {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  width: 40px;
+  background: #FFD700;
+  animation: stripeMove linear infinite;
+}
+@keyframes stripeMove {
+  from { left: 110%; }
+  to   { left: -60px; }
+}
+.car {
+  position: absolute;
+  bottom: 6%;
+  font-size: 0;
+  width: 70px;
+  height: 30px;
+  border-radius: 8px 12px 5px 5px;
+  animation: carDrive linear infinite;
+}
+.car::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -5px;
+  right: -5px;
+  height: 10px;
+  border-radius: 3px;
+}
+@keyframes carDrive {
+  from { left: -100px; }
+  to   { left: calc(100% + 120px); }
+}
+.car-window {
+  position: absolute;
+  top: 2px;
+  left: 10px;
+  right: 10px;
+  height: 14px;
+  background: rgba(100,200,255,0.6);
+  border-radius: 4px 6px 2px 2px;
+}
+.car-wheel {
+  position: absolute;
+  bottom: -6px;
+  width: 14px;
+  height: 14px;
+  background: #222;
+  border-radius: 50%;
+  border: 3px solid #888;
+  animation: wheelSpin linear infinite;
+}
+@keyframes wheelSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.car-wheel.left  { left: 6px; }
+.car-wheel.right { right: 6px; }
+.building {
+  position: absolute;
+  bottom: 32%;
+}
+
+/* ── SHOP BACK WALL ─────────────────────────────── */
+#back-wall {
+  height: 26%;
+  background: linear-gradient(180deg, #f0d8b5 0%, #e0c090 100%);
+  display: flex;
+  align-items: stretch;
+  border-bottom: 4px solid #8B6914;
+  flex-shrink: 0;
+  position: relative;
+}
+.shelf-shadow {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 8px;
+  background: rgba(0,0,0,0.15);
+}
+
+/* Döner spit */
+#spit-area {
+  width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.08);
+  border-right: 2px solid #8B6914;
+  gap: 4px;
+  padding: 8px;
+  flex-shrink: 0;
+}
+#spit-area span { font-size: 10px; color: #555; font-weight: bold; }
+.spit-container {
+  position: relative;
+  width: 60px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spit-pole {
+  position: absolute;
+  width: 5px;
+  height: 100%;
+  background: linear-gradient(90deg, #aaa, #eee, #aaa);
+  border-radius: 3px;
+  z-index: 1;
+}
+.spit-meat {
+  width: 46px;
+  height: 68px;
+  background: conic-gradient(
+    #8B4513 0deg, #CD853F 60deg, #A0522D 120deg,
+    #D2691E 180deg, #8B4513 240deg, #CD853F 300deg, #8B4513 360deg
+  );
+  border-radius: 40% 40% 35% 35%;
+  animation: rotateMeat 3s linear infinite;
+  z-index: 2;
+  box-shadow: inset -5px 0 15px rgba(0,0,0,0.3), 2px 0 10px rgba(255,150,50,0.4);
+}
+@keyframes rotateMeat {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+#meat-btn {
+  background: #D2691E;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: bold;
+}
+#meat-btn:hover { background: #A0522D; }
+
+/* Ingredient bar */
+#ingredient-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #8B6914 transparent;
+}
+.ing-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 64px;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.ing-slot:hover:not(.locked) { transform: translateY(-4px); }
+.ing-slot.locked { opacity: 0.4; filter: grayscale(1); }
+.ing-icon {
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 10px;
+  border: 2px solid #c8a060;
+  cursor: grab;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: box-shadow 0.1s;
+  position: relative;
+}
+.ing-icon:active { cursor: grabbing; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+.ing-icon.locked-icon { cursor: not-allowed; }
+.ing-count-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #e74c3c;
+  color: white;
+  font-size: 9px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ing-name {
+  font-size: 9px;
+  color: #444;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Grill decoration */
+#grill-area {
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.06);
+  border-left: 2px solid #8B6914;
+  padding: 5px;
+  flex-shrink: 0;
+}
+.grill-icon {
+  font-size: 40px;
+  animation: grillGlow 1.5s ease-in-out infinite;
+}
+@keyframes grillGlow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3) drop-shadow(0 0 8px orange); }
+}
+#grill-area span { font-size: 10px; color: #555; margin-top: 4px; text-align: center; font-weight: bold; }
+
+/* ── CUSTOMER AREA ──────────────────────────────── */
+#customer-area {
+  height: 22%;
+  background: linear-gradient(180deg, #c49858 0%, #b07840 100%);
+  border-top: 3px solid #8B6914;
+  border-bottom: 3px solid #8B6914;
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  gap: 15px;
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.counter-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 12px;
+  background: linear-gradient(180deg, #a08030, #7a6020);
+  border-bottom: 2px solid #5a4010;
+}
+.counter-front {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 18px;
+  background: linear-gradient(180deg, #7a6020, #4a3810);
+}
+#customer-sprite {
+  font-size: 58px;
+  line-height: 1;
+  transition: all 0.3s;
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+#customer-sprite.walking-in {
+  animation: walkIn 0.5s ease-out;
+}
+@keyframes walkIn {
+  from { transform: translateX(-80px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+#customer-sprite.walking-out {
+  animation: walkOut 0.5s ease-in forwards;
+}
+@keyframes walkOut {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(80px); opacity: 0; }
+}
+.speech-bubble {
+  background: white;
+  border-radius: 12px;
+  padding: 8px 12px;
+  position: relative;
+  font-size: 12px;
+  color: #333;
+  max-width: 160px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: white;
+}
+.customer-name {
+  font-weight: bold;
+  color: #555;
+  font-size: 10px;
+  margin-bottom: 3px;
+}
+.customer-order-text {
+  font-size: 11px;
+  color: #333;
+}
+#order-panel {
+  flex: 1;
+  background: rgba(255,255,255,0.92);
+  border-radius: 10px;
+  padding: 8px 12px;
+  border: 2px solid #8B6914;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  min-height: 80px;
+}
+.order-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 6px;
+}
+.order-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.order-chip {
+  background: #f5e6c8;
+  border: 1.5px solid #c8a060;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.2s;
+}
+.order-chip.done {
+  background: #d4edda;
+  border-color: #28a745;
+  color: #155724;
+}
+.patience-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.patience-label { font-size: 10px; color: #666; }
+.patience-track {
+  flex: 1;
+  height: 7px;
+  background: #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.patience-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: #2ecc71;
+  transition: width 0.2s linear, background 0.5s;
+}
+.tip-preview {
+  font-size: 10px;
+  color: #27ae60;
+  font-weight: bold;
+  margin-left: 4px;
+}
+#no-customer-msg {
+  flex: 1;
+  text-align: center;
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+}
+#next-customer-bar {
+  position: absolute;
+  bottom: 18px;
+  left: 15px;
+  right: 15px;
+  height: 5px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.next-fill {
+  height: 100%;
+  background: rgba(255,255,255,0.5);
+  border-radius: 3px;
+  transition: width 0.3s linear;
+}
+
+/* ── ASSEMBLY AREA ──────────────────────────────── */
+#assembly {
+  flex: 1;
+  background: linear-gradient(180deg, #2d1f17 0%, #1a1008 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 10px 20px;
+  position: relative;
+}
+.table-surface {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 12px;
+  background: linear-gradient(180deg, #8B6914, #5c4a20);
+}
+
+#drop-zone {
+  width: 260px;
+  height: 120px;
+  border: 3px dashed rgba(255,200,100,0.4);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  position: relative;
+  transition: border-color 0.2s, background 0.2s;
+}
+#drop-zone.drag-over {
+  border-color: #FFD700;
+  background: rgba(255,215,0,0.08);
+}
+#drop-zone.empty-hint::after {
+  content: 'Zutaten hier ablegen';
+  position: absolute;
+  color: rgba(255,200,100,0.4);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+#doener-visual {
+  width: 220px;
+  height: 90px;
+  position: relative;
+  display: none;
+}
+.pide-wrap {
+  width: 220px;
+  height: 80px;
+  background: linear-gradient(180deg, #c87830 0%, #e8a060 30%, #d09050 70%, #c87830 100%);
+  border-radius: 110px / 45px;
+  position: absolute;
+  top: 0;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+.pide-lines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 8px,
+    rgba(0,0,0,0.08) 8px, rgba(0,0,0,0.08) 9px
+  );
+  border-radius: inherit;
+}
+.ingredient-layer {
+  position: absolute;
+  inset: 8px 15px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden;
+}
+.ing-piece {
+  font-size: 18px;
+  animation: pieceIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes pieceIn {
+  from { transform: scale(0) rotate(-20deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.pide-top {
+  width: 220px;
+  height: 30px;
+  background: linear-gradient(180deg, #e8a060 0%, #c87830 100%);
+  border-radius: 110px / 20px;
+  position: absolute;
+  top: 20px;
+  opacity: 0.6;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
+}
+
+/* buttons next to assembly */
+.assembly-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#serve-btn {
+  background: linear-gradient(180deg, #e67e22, #c0392b);
+  color: white;
+  border: none;
+  padding: 14px 22px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transition: transform 0.1s, box-shadow 0.1s;
+  min-width: 130px;
+  text-align: center;
+}
+#serve-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+}
+#serve-btn:disabled {
+  background: #444;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+#clear-btn {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+#clear-btn:hover { background: rgba(255,255,255,0.2); }
+#pide-btn {
+  background: linear-gradient(180deg, #c87830, #a05010);
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  transition: transform 0.1s;
+}
+#pide-btn:hover:not(:disabled) { transform: scale(1.05); }
+#pide-btn:disabled { background: #444; cursor: not-allowed; }
+
+/* order completeness indicator */
+#match-indicator {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  min-width: 130px;
+}
+#match-indicator.match-good { color: #2ecc71; font-weight: bold; }
+
+/* ── HUD ────────────────────────────────────────── */
+#hud {
+  height: 44px;
+  background: #0d0600;
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  gap: 16px;
+  border-top: 2px solid #8B6914;
+  flex-shrink: 0;
+}
+.hud-stat {
+  color: #FFD700;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.hud-stat span.val { color: #fff; }
+.hud-divider { width: 1px; height: 24px; background: rgba(255,215,0,0.2); }
+#hud-btns { margin-left: auto; display: flex; gap: 8px; }
+.hud-btn {
+  padding: 6px 14px;
+  border-radius: 7px;
+  border: none;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.hud-btn:hover { transform: scale(1.05); }
+#shop-btn { background: #FFD700; color: #1a0a00; }
+#stats-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+
+/* ── SHOP MODAL ─────────────────────────────────── */
+#shop-modal, #stats-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#shop-modal.open, #stats-modal.open { display: flex; }
+
+.modal-box {
+  background: linear-gradient(160deg, #0f1f35, #0a1525);
+  border: 2px solid #2ecc71;
+  border-radius: 16px;
+  width: min(720px, 95vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 22px;
+  color: white;
+  scrollbar-width: thin;
+  scrollbar-color: #2ecc71 transparent;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.modal-title { font-size: 22px; font-weight: bold; color: #2ecc71; }
+.modal-money { font-size: 16px; color: #FFD700; font-weight: bold; }
+.modal-close {
+  background: #c0392b;
+  color: white;
+  border: none;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+.shop-section { margin-bottom: 20px; }
+.shop-section-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #FFD700;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,215,0,0.25);
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+.shop-card {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  transition: background 0.2s, transform 0.1s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.shop-card:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
+.shop-card-icon { font-size: 34px; }
+.shop-card-name { font-size: 13px; font-weight: bold; }
+.shop-card-desc { font-size: 10px; color: #aaa; }
+.shop-card-price { font-size: 14px; color: #FFD700; font-weight: bold; margin-top: 4px; }
+.buy-btn {
+  margin-top: 6px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
+  width: 100%;
+  transition: background 0.2s;
+}
+.buy-btn:hover:not(:disabled) { background: #2ecc71; }
+.buy-btn:disabled { background: #444; cursor: not-allowed; }
+.buy-btn.owned { background: #2980b9; }
+.buy-btn.owned:hover { background: #3498db; }
+.restock-btn {
+  background: #e67e22;
+}
+.restock-btn:hover:not(:disabled) { background: #f39c12; }
+
+/* ── STATS MODAL ─────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.stat-card {
+  background: rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+.stat-card-val { font-size: 28px; font-weight: bold; color: #FFD700; }
+.stat-card-label { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+/* ── NOTIFICATIONS ─────────────────────────────── */
+.toast {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(0,0,0,0.9);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 500;
+  border: 2px solid #FFD700;
+  animation: toastAnim 2.5s forwards;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@keyframes toastAnim {
+  0%  { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  75% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100%{ opacity: 0; transform: translateX(-50%) translateY(-20px); }
+}
+.money-float {
+  position: fixed;
+  font-size: 18px;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 400;
+  animation: moneyFloat 1.8s forwards;
+}
+@keyframes moneyFloat {
+  0%  { opacity: 1; transform: translateY(0) scale(1); }
+  100%{ opacity: 0; transform: translateY(-90px) scale(0.8); }
+}
+.angry-float {
+  color: #e74c3c;
+}
+
+/* ── LEVEL UP ───────────────────────────────────── */
+#levelup-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 600;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  gap: 20px;
+}
+#levelup-screen.show { display: flex; }
+.levelup-star { font-size: 80px; animation: starSpin 2s linear infinite; }
+@keyframes starSpin {
+  from { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.2); }
+  to   { transform: rotate(360deg) scale(1); }
+}
+.levelup-title { font-size: 36px; font-weight: bold; color: #FFD700; }
+.levelup-sub   { font-size: 18px; color: #aaa; }
+#levelup-continue {
+  background: #FFD700;
+  color: #1a0a00;
+  border: none;
+  padding: 14px 30px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+/* ── DRAG GHOST ─────────────────────────────────── */
+#drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  font-size: 36px;
+  z-index: 1000;
+  transform: translate(-50%, -50%);
+  display: none;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+</style>
+</head>
+<body>
+
+<div id="game">
+
+  <!-- OUTSIDE -->
+  <div id="outside">
+    <div class="window-bar-h top"></div>
+    <div class="window-bar-h mid"></div>
+    <div class="window-bar-v v1"></div>
+    <div class="window-bar-v v2"></div>
+    <div class="road">
+      <div class="road-stripe" style="animation-duration:1.8s; animation-delay:0s"></div>
+      <div class="road-stripe" style="animation-duration:1.8s; animation-delay:0.6s"></div>
+      <div class="road-stripe" style="animation-duration:1.8s; animation-delay:1.2s"></div>
+    </div>
+  </div>
+
+  <!-- BACK WALL (equipment + ingredients) -->
+  <div id="back-wall">
+    <div id="spit-area">
+      <span>🔥 Spiess</span>
+      <div class="spit-container">
+        <div class="spit-pole"></div>
+        <div class="spit-meat" id="spit-meat-vis"></div>
+      </div>
+      <button id="meat-btn" onclick="sliceMeat()">✂️ Schneiden</button>
+    </div>
+
+    <div id="ingredient-bar">
+      <!-- filled by JS -->
+    </div>
+
+    <div id="grill-area">
+      <div class="grill-icon">🔥</div>
+      <span id="grill-label">Standard Grill</span>
+    </div>
+    <div class="shelf-shadow"></div>
+  </div>
+
+  <!-- CUSTOMER -->
+  <div id="customer-area">
+    <div class="counter-top"></div>
+    <div id="customer-sprite">🚶</div>
+
+    <div class="speech-bubble" id="speech-bubble" style="display:none">
+      <div class="customer-name" id="customer-name"></div>
+      <div class="customer-order-text" id="customer-text"></div>
+    </div>
+
+    <div id="order-panel" style="display:none">
+      <div class="order-label">Bestellung:</div>
+      <div class="order-chips" id="order-chips"></div>
+      <div class="patience-wrap">
+        <span class="patience-label">⏰</span>
+        <div class="patience-track">
+          <div class="patience-bar" id="patience-bar"></div>
+        </div>
+        <span class="tip-preview" id="tip-preview">+€0.50</span>
+      </div>
+    </div>
+    <div id="no-customer-msg">Warte auf nächsten Kunden…</div>
+
+    <div id="next-customer-bar"><div class="next-fill" id="next-fill" style="width:0%"></div></div>
+    <div class="counter-front"></div>
+  </div>
+
+  <!-- ASSEMBLY -->
+  <div id="assembly">
+    <div class="table-surface"></div>
+
+    <div id="drop-zone" class="empty-hint"
+      ondragover="onDragOver(event)"
+      ondragleave="onDragLeave(event)"
+      ondrop="onDrop(event)">
+      <div id="doener-visual">
+        <div class="pide-wrap">
+          <div class="pide-lines"></div>
+          <div class="ingredient-layer" id="ingredient-layer"></div>
+        </div>
+        <div class="pide-top"></div>
+      </div>
+    </div>
+
+    <div class="assembly-btns">
+      <button id="pide-btn" onclick="addPide()">🫓 Pide nehmen</button>
+      <button id="serve-btn" disabled onclick="serveDoner()">🥙 Servieren</button>
+      <button id="clear-btn" onclick="clearAssembly()">🗑️ Leeren</button>
+      <div id="match-indicator">Kein Kunde</div>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-stat">💰 <span class="val" id="hud-money">€50.00</span></div>
+    <div class="hud-divider"></div>
+    <div class="hud-stat">⭐ <span class="val" id="hud-level">Kiosk</span></div>
+    <div class="hud-divider"></div>
+    <div class="hud-stat">🥙 <span class="val" id="hud-served">0</span> serviert</div>
+    <div class="hud-divider"></div>
+    <div class="hud-stat">😊 <span class="val" id="hud-happy">0</span> zufrieden</div>
+    <div id="hud-btns">
+      <button class="hud-btn" id="stats-btn" onclick="openStats()">📊 Stats</button>
+      <button class="hud-btn" id="shop-btn" onclick="openShop()">🛒 Shop</button>
+    </div>
+  </div>
+</div>
+
+<!-- DRAG GHOST -->
+<div id="drag-ghost"></div>
+
+<!-- SHOP MODAL -->
+<div id="shop-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">🛒 Döner King Online Shop</div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="modal-money" id="shop-money-display">€50.00</div>
+        <button class="modal-close" onclick="closeShop()">✕</button>
+      </div>
+    </div>
+    <div id="shop-content"></div>
+  </div>
+</div>
+
+<!-- STATS MODAL -->
+<div id="stats-modal">
+  <div class="modal-box" style="max-width:400px; border-color:#3498db">
+    <div class="modal-header">
+      <div class="modal-title" style="color:#3498db">📊 Statistiken</div>
+      <button class="modal-close" onclick="document.getElementById('stats-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="stats-grid" id="stats-content"></div>
+  </div>
+</div>
+
+<!-- LEVEL UP -->
+<div id="levelup-screen">
+  <div class="levelup-star">⭐</div>
+  <div class="levelup-title" id="levelup-title">Level Up!</div>
+  <div class="levelup-sub" id="levelup-sub">Du hast einen besseren Laden!</div>
+  <button id="levelup-continue" onclick="closeLevelUp()">Weiter →</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════════
+const INGREDIENTS = {
+  meat:     { emoji: '🥩', name: 'Fleisch',     price: 5.0,  restockAmt: 30, restock: 1.5 },
+  pide:     { emoji: '🫓', name: 'Pide',        price: 4.0,  restockAmt: 20, restock: 1.0 },
+  lettuce:  { emoji: '🥬', name: 'Salat',       price: 2.5,  restockAmt: 40, restock: 0.3 },
+  tomato:   { emoji: '🍅', name: 'Tomate',      price: 3.0,  restockAmt: 40, restock: 0.4 },
+  onion:    { emoji: '🧅', name: 'Zwiebel',     price: 2.0,  restockAmt: 40, restock: 0.2 },
+  sauce_w:  { emoji: '🤍', name: 'Knoblauchsoße', price: 3.5, restockAmt: 50, restock: 0.3 },
+  sauce_h:  { emoji: '🌶️', name: 'Scharf',      price: 3.5,  restockAmt: 50, restock: 0.3, locked: true },
+  cheese:   { emoji: '🧀', name: 'Käse',        price: 5.0,  restockAmt: 30, restock: 0.5, locked: true },
+  cabbage:  { emoji: '🥦', name: 'Rotkohl',     price: 2.5,  restockAmt: 40, restock: 0.2, locked: true },
+  egg:      { emoji: '🍳', name: 'Ei',          price: 6.0,  restockAmt: 25, restock: 0.6, locked: true },
+  corn:     { emoji: '🌽', name: 'Mais',        price: 3.0,  restockAmt: 40, restock: 0.3, locked: true },
+};
+
+const SHOP_ITEMS = [
+  {
+    id: 'upgrade_shop_2',
+    category: 'shop',
+    icon: '🏪',
+    name: 'Kleiner Laden',
+    desc: 'Mehr Kunden, besserer Standort. +50% Kundenstrom.',
+    price: 350,
+    requires: null,
+    levelRequired: 1,
+  },
+  {
+    id: 'upgrade_shop_3',
+    category: 'shop',
+    icon: '🏬',
+    name: 'Großer Laden',
+    desc: 'Bester Standort in der Stadt! +100% Kundenstrom.',
+    price: 1500,
+    requires: 'upgrade_shop_2',
+    levelRequired: 2,
+  },
+  {
+    id: 'upgrade_shop_4',
+    category: 'shop',
+    icon: '🏢',
+    name: 'Döner-Palast',
+    desc: 'Stadtmitte! +200% Kundenstrom, Mega-Preise.',
+    price: 5000,
+    requires: 'upgrade_shop_3',
+    levelRequired: 3,
+  },
+  {
+    id: 'upgrade_grill_2',
+    category: 'equipment',
+    icon: '🔥',
+    name: 'Profi-Grill',
+    desc: 'Fleisch wird schneller fertig. Kunden warten kürzer.',
+    price: 200,
+    requires: null,
+    levelRequired: 1,
+  },
+  {
+    id: 'upgrade_grill_3',
+    category: 'equipment',
+    icon: '⚡',
+    name: 'Turbo-Grill',
+    desc: 'Maximale Grillgeschwindigkeit! Keine Wartezeiten.',
+    price: 600,
+    requires: 'upgrade_grill_2',
+    levelRequired: 2,
+  },
+  {
+    id: 'upgrade_knife',
+    category: 'equipment',
+    icon: '🔪',
+    name: 'Profi-Messer',
+    desc: 'Schneidest doppelt so viel Fleisch auf einmal.',
+    price: 150,
+    requires: null,
+    levelRequired: 1,
+  },
+  {
+    id: 'unlock_sauce_h',
+    category: 'ingredients',
+    icon: '🌶️',
+    name: 'Scharfe Soße freischalten',
+    desc: 'Beliebte Option! Viele Kunden wollen sie.',
+    price: 40,
+    unlocks: 'sauce_h',
+    levelRequired: 1,
+  },
+  {
+    id: 'unlock_cheese',
+    category: 'ingredients',
+    icon: '🧀',
+    name: 'Käse freischalten',
+    desc: 'Premium-Zutat! Döner bringen mehr Geld.',
+    price: 60,
+    unlocks: 'cheese',
+    levelRequired: 1,
+  },
+  {
+    id: 'unlock_cabbage',
+    category: 'ingredients',
+    icon: '🥦',
+    name: 'Rotkohl freischalten',
+    desc: 'Traditionelle Zutat, sehr beliebt.',
+    price: 30,
+    unlocks: 'cabbage',
+    levelRequired: 1,
+  },
+  {
+    id: 'unlock_egg',
+    category: 'ingredients',
+    icon: '🍳',
+    name: 'Spiegelei freischalten',
+    desc: 'Für die besonderen Kunden. Teurer Döner.',
+    price: 80,
+    unlocks: 'egg',
+    levelRequired: 2,
+  },
+  {
+    id: 'unlock_corn',
+    category: 'ingredients',
+    icon: '🌽',
+    name: 'Mais freischalten',
+    desc: 'Süßer Kontrast im Döner.',
+    price: 35,
+    unlocks: 'corn',
+    levelRequired: 1,
+  },
+  {
+    id: 'upgrade_pide',
+    category: 'equipment',
+    icon: '🫓',
+    name: 'Premium Pide',
+    desc: 'Besseres Brot, mehr Geschmack, höhere Preise.',
+    price: 120,
+    requires: null,
+    levelRequired: 1,
+  },
+];
+
+const CUSTOMER_NAMES = ['Ahmet','Lars','Fatima','Kevin','Zeynep','Marco','Selin','Tobias','Ayse','Björn','Melis','Stefan'];
+const CUSTOMER_EMOJIS = ['👨','👩','🧔','👴','👵','🧑','👦','👧'];
+const CUSTOMER_PHRASES = [
+  'Einen Döner bitte!',
+  'Ich hätte gerne…',
+  'Mit allem?',
+  'Mach mich satt!',
+  'Einmal Döner!',
+  'Scharf bitte!',
+];
+
+const gs = {
+  money: 50,
+  shopLevel: 1,
+  grillLevel: 1,
+  knifeUpgrade: false,
+  pideUpgrade: false,
+  owned: new Set(),
+  inventory: {
+    meat: 30, pide: 20, lettuce: 40, tomato: 40,
+    onion: 40, sauce_w: 50, sauce_h: 0,
+    cheese: 0, cabbage: 0, egg: 0, corn: 0,
+  },
+  stats: {
+    served: 0,
+    happy: 0,
+    angry: 0,
+    totalEarned: 0,
+    donersMade: 0,
+  },
+  // assembly
+  hasPide: false,
+  currentIngredients: [],  // list of ingredient keys on doener
+  // current customer
+  customer: null,
+  patienceInterval: null,
+  patiencePct: 100,
+  nextCustomerTimer: null,
+  nextCustomerProgress: 0,
+  nextCustomerDuration: 0,
+  nextCustomerInterval: null,
+};
+
+// how many seconds between customers per shop level
+function spawnDelay() {
+  const base = [25, 18, 12, 8][gs.shopLevel - 1] || 8;
+  return base * 1000;
+}
+function patienceDuration() {
+  const base = [20, 25, 30, 35][gs.grillLevel - 1] || 20;
+  return base * 1000;
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+function init() {
+  buildCars();
+  buildClouds();
+  buildBuildings();
+  renderIngredientBar();
+  updateHUD();
+  scheduleNextCustomer();
+}
+
+// ═══════════════════════════════════════════════════════════
+// OUTSIDE / CARS
+// ═══════════════════════════════════════════════════════════
+const CAR_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#ecf0f1','#34495e'];
+
+function buildCars() {
+  const outside = document.getElementById('outside');
+  const numCars = 6 + gs.shopLevel * 2;
+  for (let i = 0; i < numCars; i++) {
+    const car = document.createElement('div');
+    car.className = 'car';
+    const color = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
+    const dur   = (3 + Math.random() * 4).toFixed(1) + 's';
+    const delay = (Math.random() * -6).toFixed(1) + 's';
+    const bottom = 4 + Math.random() * 8;
+    car.style.cssText = `background:${color};animation-duration:${dur};animation-delay:${delay};bottom:${bottom}%`;
+    car.innerHTML = `<div class="car-window"></div><div class="car-wheel left"></div><div class="car-wheel right"></div>`;
+    // wheel anim speed matches car
+    car.querySelectorAll('.car-wheel').forEach(w => {
+      w.style.animationDuration = (parseFloat(dur) * 0.4).toFixed(1) + 's';
+    });
+    outside.appendChild(car);
+  }
+}
+
+function buildClouds() {
+  const outside = document.getElementById('outside');
+  for (let i = 0; i < 4; i++) {
+    const c = document.createElement('div');
+    c.className = 'cloud';
+    const w = 60 + Math.random() * 60;
+    const h = 20 + Math.random() * 15;
+    const top = 5 + Math.random() * 30;
+    const dur = (20 + Math.random() * 20).toFixed(0) + 's';
+    const delay = (Math.random() * -30).toFixed(0) + 's';
+    c.style.cssText = `width:${w}px;height:${h}px;top:${top}%;animation-duration:${dur};animation-delay:${delay}`;
+    outside.appendChild(c);
+  }
+}
+
+function buildBuildings() {
+  const outside = document.getElementById('outside');
+  const positions = [8,18,35,55,72,88];
+  positions.forEach(left => {
+    const b = document.createElement('div');
+    b.className = 'building';
+    const w = 30 + Math.random() * 30;
+    const h = 25 + Math.random() * 35;
+    b.style.cssText = `left:${left}%;width:${w}px;height:${h}px`;
+    // windows
+    for (let r = 0; r < 3; r++) {
+      for (let col2 = 0; col2 < 2; col2++) {
+        const win = document.createElement('div');
+        win.style.cssText = `position:absolute;width:6px;height:6px;background:${Math.random()>0.4?'#ffe066':'#334'};left:${6+col2*12}px;top:${4+r*9}px`;
+        b.appendChild(win);
+      }
+    }
+    outside.appendChild(b);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// INGREDIENT BAR
+// ═══════════════════════════════════════════════════════════
+function renderIngredientBar() {
+  const bar = document.getElementById('ingredient-bar');
+  bar.innerHTML = '';
+  const keys = Object.keys(INGREDIENTS).filter(k => k !== 'pide');
+  keys.forEach(key => {
+    const ing  = INGREDIENTS[key];
+    const cnt  = gs.inventory[key] || 0;
+    const locked = ing.locked && !gs.owned.has('unlock_' + key) && key !== 'meat' && key !== 'pide' && key !== 'lettuce' && key !== 'tomato' && key !== 'onion' && key !== 'sauce_w';
+    const slot = document.createElement('div');
+    slot.className = 'ing-slot' + (locked ? ' locked' : '');
+    slot.innerHTML = `
+      <div class="ing-icon${locked ? ' locked-icon' : ''}"
+           ${!locked ? `draggable="true" data-ing="${key}"
+           ondragstart="startDrag(event,'${key}')"
+           onmousedown="startTouchDrag(event,'${key}')"` : ''}>
+        ${ing.emoji}
+        ${!locked ? `<span class="ing-count-badge">${cnt}</span>` : ''}
+      </div>
+      <div class="ing-name">${locked ? '🔒 ' : ''}${ing.name}</div>
+    `;
+    bar.appendChild(slot);
+  });
+  updateGrillLabel();
+}
+
+function updateGrillLabel() {
+  const labels = ['Standard Grill','Profi-Grill','Turbo-Grill'];
+  document.getElementById('grill-label').textContent = labels[gs.grillLevel - 1] || labels[0];
+}
+
+// ═══════════════════════════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════════════════════════
+let dragIngKey = null;
+const ghost = document.getElementById('drag-ghost');
+
+function startDrag(e, key) {
+  dragIngKey = key;
+  e.dataTransfer.effectAllowed = 'copy';
+  e.dataTransfer.setData('text', key);
+  const ghost2 = document.createElement('span');
+  ghost2.style.fontSize = '1px';
+  ghost2.style.opacity = '0';
+  document.body.appendChild(ghost2);
+  e.dataTransfer.setDragImage(ghost2, 0, 0);
+  ghost.textContent = INGREDIENTS[key].emoji;
+  ghost.style.display = 'block';
+  setTimeout(() => document.body.removeChild(ghost2), 0);
+}
+
+document.addEventListener('dragover', e => {
+  ghost.style.left = e.clientX + 'px';
+  ghost.style.top  = e.clientY + 'px';
+});
+document.addEventListener('dragend', () => {
+  ghost.style.display = 'none';
+  dragIngKey = null;
+});
+
+// Touch-based dragging
+let touchDragKey = null;
+function startTouchDrag(e, key) {
+  if (e.button !== 0) return;
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+function onDragLeave(e) {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const key = e.dataTransfer.getData('text') || dragIngKey;
+  if (key) addIngredient(key);
+}
+
+// Also allow clicking on ingredients
+document.addEventListener('DOMContentLoaded', () => {});
+
+function clickAddIngredient(key) {
+  addIngredient(key);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ASSEMBLY
+// ═══════════════════════════════════════════════════════════
+function addPide() {
+  if (!gs.hasPide) {
+    if (gs.inventory.pide <= 0) { toast('❌ Kein Pide mehr! Kaufe nach.'); return; }
+    gs.inventory.pide--;
+    gs.hasPide = true;
+    document.getElementById('drop-zone').classList.remove('empty-hint');
+    document.getElementById('doener-visual').style.display = 'block';
+    document.getElementById('pide-btn').disabled = true;
+    updateIngBadge('pide');
+  }
+  updateServeBtn();
+}
+
+function addIngredient(key) {
+  if (!gs.hasPide) { toast('🫓 Erst Pide nehmen!'); return; }
+  if (!gs.customer) { toast('😴 Kein Kunde da!'); return; }
+  const ing = INGREDIENTS[key];
+  if (!ing) return;
+  // check locked
+  const locked = ing.locked && !gs.owned.has('unlock_' + key);
+  if (locked) { toast('🔒 Zutat noch gesperrt!'); return; }
+  if ((gs.inventory[key] || 0) <= 0) { toast(`❌ Kein ${ing.name} mehr!`); return; }
+  if (gs.currentIngredients.filter(k => k === key).length >= 2) {
+    toast('Genug davon!'); return;
+  }
+  gs.inventory[key]--;
+  gs.currentIngredients.push(key);
+
+  // visual
+  const layer = document.getElementById('ingredient-layer');
+  const piece = document.createElement('div');
+  piece.className = 'ing-piece';
+  piece.textContent = ing.emoji;
+  layer.appendChild(piece);
+
+  updateIngBadge(key);
+  updateServeBtn();
+  updateMatchIndicator();
+}
+
+function updateIngBadge(key) {
+  const bar = document.getElementById('ingredient-bar');
+  const icons = bar.querySelectorAll('.ing-icon[data-ing]');
+  icons.forEach(el => {
+    if (el.dataset.ing === key) {
+      const badge = el.querySelector('.ing-count-badge');
+      if (badge) badge.textContent = gs.inventory[key] || 0;
+    }
+  });
+  // pide badge
+  renderIngredientBar(); // re-render is safe here
+}
+
+function sliceMeat() {
+  const amount = gs.knifeUpgrade ? 4 : 2;
+  if (gs.inventory.meat + amount > 999) return;
+  // meat comes from spit (always available unless you don't restock)
+  // meat from spit is free once stocked
+  addIngredient('meat');
+}
+
+function clearAssembly() {
+  gs.hasPide = false;
+  gs.currentIngredients = [];
+  document.getElementById('drop-zone').classList.add('empty-hint');
+  document.getElementById('doener-visual').style.display = 'none';
+  document.getElementById('ingredient-layer').innerHTML = '';
+  document.getElementById('pide-btn').disabled = false;
+  document.getElementById('serve-btn').disabled = true;
+  document.getElementById('match-indicator').textContent = gs.customer ? 'Döner zusammenstellen…' : 'Kein Kunde';
+  document.getElementById('match-indicator').className = '';
+}
+
+function updateServeBtn() {
+  if (!gs.customer || !gs.hasPide) {
+    document.getElementById('serve-btn').disabled = true;
+    return;
+  }
+  const matched = checkOrderMatch();
+  document.getElementById('serve-btn').disabled = !matched;
+}
+
+function checkOrderMatch() {
+  if (!gs.customer) return false;
+  const order = gs.customer.order; // array of keys
+  const have  = [...gs.currentIngredients];
+  // every order item must be in have
+  const orderCopy = [...order];
+  const haveCopy  = [...have];
+  for (const item of orderCopy) {
+    const idx = haveCopy.indexOf(item);
+    if (idx === -1) return false;
+    haveCopy.splice(idx, 1);
+  }
+  return true;
+}
+
+function updateMatchIndicator() {
+  const ind = document.getElementById('match-indicator');
+  if (!gs.customer) { ind.textContent = 'Kein Kunde'; ind.className = ''; return; }
+  if (!gs.hasPide)  { ind.textContent = '🫓 Pide holen'; ind.className = ''; return; }
+  const order = gs.customer.order;
+  const have  = gs.currentIngredients;
+  // count fulfilled
+  const orderCopy = [...order];
+  const haveCopy  = [...have];
+  let fulfilled = 0;
+  for (const item of [...orderCopy]) {
+    const idx = haveCopy.indexOf(item);
+    if (idx !== -1) { fulfilled++; haveCopy.splice(idx,1); }
+  }
+  if (fulfilled === order.length && checkOrderMatch()) {
+    ind.textContent = '✅ Fertig! Servieren!';
+    ind.className = 'match-good';
+  } else {
+    ind.textContent = `${fulfilled}/${order.length} Zutaten`;
+    ind.className = '';
+  }
+  // update chips
+  updateOrderChips();
+}
+
+function updateOrderChips() {
+  if (!gs.customer) return;
+  const chips = document.getElementById('order-chips');
+  const order = gs.customer.order;
+  const haveCopy = [...gs.currentIngredients];
+  chips.innerHTML = '';
+  order.forEach(key => {
+    const ing = INGREDIENTS[key];
+    const chip = document.createElement('div');
+    const idx = haveCopy.indexOf(key);
+    const done = idx !== -1;
+    if (done) haveCopy.splice(idx, 1);
+    chip.className = 'order-chip' + (done ? ' done' : '');
+    chip.textContent = ing.emoji + ' ' + ing.name;
+    chips.appendChild(chip);
+  });
+}
+
+function serveDoner() {
+  if (!gs.customer || !checkOrderMatch()) return;
+  // calculate price
+  const order = gs.customer.order;
+  let basePrice = 4.50 + order.length * 0.50;
+  if (gs.pideUpgrade) basePrice += 1.0;
+  // tip based on patience
+  const tipPct = gs.patiencePct / 100;
+  const tip = parseFloat((basePrice * 0.3 * tipPct).toFixed(2));
+  const total = parseFloat((basePrice + tip).toFixed(2));
+
+  gs.money += total;
+  gs.stats.served++;
+  gs.stats.happy++;
+  gs.stats.totalEarned += total;
+  gs.stats.donersMade++;
+
+  // money float
+  showMoneyFloat('+€' + total.toFixed(2), '#2ecc71');
+  toast(`✅ ${gs.customer.name} ist zufrieden! +€${total.toFixed(2)}`);
+
+  clearAssembly();
+  dismissCustomer(true);
+  updateHUD();
+  checkLevelUp();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CUSTOMER SYSTEM
+// ═══════════════════════════════════════════════════════════
+function generateOrder() {
+  const available = Object.keys(INGREDIENTS).filter(k => {
+    if (k === 'pide') return false;
+    const ing = INGREDIENTS[k];
+    const locked = ing.locked && !gs.owned.has('unlock_' + k);
+    return !locked && (gs.inventory[k] || 0) > 0;
+  });
+
+  const numItems = 2 + Math.floor(Math.random() * 3); // 2-4 items
+  const order = [];
+  // always include meat
+  if (available.includes('meat')) order.push('meat');
+  const others = available.filter(k => k !== 'meat');
+  shuffle(others);
+  for (let i = 0; i < Math.min(numItems - 1, others.length); i++) {
+    order.push(others[i]);
+  }
+  shuffle(order);
+  return order;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function spawnCustomer() {
+  if (gs.customer) return;
+  if (gs.nextCustomerInterval) clearInterval(gs.nextCustomerInterval);
+
+  const name  = CUSTOMER_NAMES[Math.floor(Math.random() * CUSTOMER_NAMES.length)];
+  const emoji = CUSTOMER_EMOJIS[Math.floor(Math.random() * CUSTOMER_EMOJIS.length)];
+  const order = generateOrder();
+  if (order.length === 0) { scheduleNextCustomer(); return; }
+
+  const phrase = CUSTOMER_PHRASES[Math.floor(Math.random() * CUSTOMER_PHRASES.length)];
+
+  gs.customer = { name, emoji, order, phrase };
+  gs.patiencePct = 100;
+
+  // show UI
+  const sprite  = document.getElementById('customer-sprite');
+  const bubble  = document.getElementById('speech-bubble');
+  const panel   = document.getElementById('order-panel');
+  const noMsg   = document.getElementById('no-customer-msg');
+  const nextBar = document.getElementById('next-customer-bar');
+
+  sprite.textContent = emoji;
+  sprite.className = 'walking-in';
+  nextBar.style.display = 'none';
+
+  document.getElementById('customer-name').textContent  = name;
+  document.getElementById('customer-text').textContent  = phrase;
+  bubble.style.display = 'block';
+  panel.style.display  = 'block';
+  noMsg.style.display  = 'none';
+
+  updateOrderChips();
+  updateMatchIndicator();
+  updateServeBtn();
+
+  // patience countdown
+  const dur = patienceDuration();
+  let elapsed = 0;
+  const interval = 100;
+  gs.patienceInterval = setInterval(() => {
+    elapsed += interval;
+    gs.patiencePct = Math.max(0, 100 - (elapsed / dur) * 100);
+    const bar = document.getElementById('patience-bar');
+    if (bar) {
+      bar.style.width = gs.patiencePct + '%';
+      if (gs.patiencePct > 60)      bar.style.background = '#2ecc71';
+      else if (gs.patiencePct > 30) bar.style.background = '#f39c12';
+      else                          bar.style.background = '#e74c3c';
+    }
+    const tipAmt = parseFloat(((4.50 + (gs.customer?.order?.length||0)*0.5) * 0.3 * (gs.patiencePct/100)).toFixed(2));
+    const tipEl = document.getElementById('tip-preview');
+    if (tipEl) tipEl.textContent = '+€' + tipAmt.toFixed(2) + ' Trinkgeld';
+
+    if (gs.patiencePct <= 0) {
+      customerLeaves();
+    }
+  }, interval);
+}
+
+function customerLeaves() {
+  if (!gs.customer) return;
+  clearInterval(gs.patienceInterval);
+  gs.stats.angry++;
+  const name = gs.customer.name;
+  showMoneyFloat('😠 ' + name + ' geht', '#e74c3c', true);
+  dismissCustomer(false);
+  scheduleNextCustomer();
+}
+
+function dismissCustomer(happy) {
+  clearInterval(gs.patienceInterval);
+  gs.customer = null;
+
+  const sprite = document.getElementById('customer-sprite');
+  const bubble = document.getElementById('speech-bubble');
+  const panel  = document.getElementById('order-panel');
+  const noMsg  = document.getElementById('no-customer-msg');
+  const nextBar= document.getElementById('next-customer-bar');
+
+  sprite.className = 'walking-out';
+  setTimeout(() => {
+    sprite.textContent = '🚶';
+    sprite.className = '';
+    bubble.style.display = 'none';
+    panel.style.display  = 'none';
+    noMsg.style.display  = 'block';
+    nextBar.style.display = 'block';
+  }, 500);
+
+  document.getElementById('serve-btn').disabled = true;
+  document.getElementById('match-indicator').textContent = 'Kein Kunde';
+  document.getElementById('match-indicator').className = '';
+
+  if (happy) scheduleNextCustomer();
+  updateHUD();
+}
+
+function scheduleNextCustomer() {
+  if (gs.nextCustomerTimer)   clearTimeout(gs.nextCustomerTimer);
+  if (gs.nextCustomerInterval) clearInterval(gs.nextCustomerInterval);
+
+  const delay = spawnDelay();
+  gs.nextCustomerDuration = delay;
+  gs.nextCustomerProgress = 0;
+  const step = 100;
+  const nextBar = document.getElementById('next-fill');
+
+  gs.nextCustomerInterval = setInterval(() => {
+    gs.nextCustomerProgress += step;
+    const pct = Math.min(100, (gs.nextCustomerProgress / delay) * 100);
+    if (nextBar) nextBar.style.width = pct + '%';
+  }, step);
+
+  gs.nextCustomerTimer = setTimeout(() => {
+    clearInterval(gs.nextCustomerInterval);
+    spawnCustomer();
+  }, delay);
+}
+
+// ═══════════════════════════════════════════════════════════
+// HUD & LEVEL
+// ═══════════════════════════════════════════════════════════
+const LEVEL_NAMES = ['','Kiosk','Kleiner Laden','Großer Laden','Döner-Palast'];
+
+function updateHUD() {
+  document.getElementById('hud-money').textContent  = '€' + gs.money.toFixed(2);
+  document.getElementById('hud-level').textContent  = LEVEL_NAMES[gs.shopLevel] || 'Kiosk';
+  document.getElementById('hud-served').textContent = gs.stats.served;
+  document.getElementById('hud-happy').textContent  = gs.stats.happy;
+}
+
+function checkLevelUp() {
+  const thresholds = [0, 150, 750, 3000, Infinity];
+  const newLevel = thresholds.findLastIndex(t => gs.stats.totalEarned >= t);
+  if (newLevel > gs.shopLevel && newLevel <= 4) {
+    // auto upgrade if they own the shop
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHOP
+// ═══════════════════════════════════════════════════════════
+function openShop() {
+  document.getElementById('shop-modal').classList.add('open');
+  renderShop();
+}
+function closeShop() {
+  document.getElementById('shop-modal').classList.remove('open');
+  renderIngredientBar();
+}
+
+function renderShop() {
+  document.getElementById('shop-money-display').textContent = '💰 €' + gs.money.toFixed(2);
+  const content = document.getElementById('shop-content');
+  content.innerHTML = '';
+
+  // --- RESTOCK SECTION ---
+  const restockSection = document.createElement('div');
+  restockSection.className = 'shop-section';
+  restockSection.innerHTML = '<div class="shop-section-title">📦 Zutaten nachkaufen</div>';
+  const restockGrid = document.createElement('div');
+  restockGrid.className = 'shop-grid';
+  Object.entries(INGREDIENTS).forEach(([key, ing]) => {
+    const locked = ing.locked && !gs.owned.has('unlock_' + key) && !['meat','pide','lettuce','tomato','onion','sauce_w'].includes(key);
+    if (locked) return;
+    const card = document.createElement('div');
+    card.className = 'shop-card';
+    const cnt = gs.inventory[key] || 0;
+    const canBuy = gs.money >= ing.price;
+    card.innerHTML = `
+      <div class="shop-card-icon">${ing.emoji}</div>
+      <div class="shop-card-name">${ing.name}</div>
+      <div class="shop-card-desc">Bestand: ${cnt} | +${ing.restockAmt} Stück</div>
+      <div class="shop-card-price">€${ing.price.toFixed(2)}</div>
+      <button class="buy-btn restock-btn" ${canBuy ? '' : 'disabled'} onclick="buyRestock('${key}')">
+        Nachkaufen
+      </button>`;
+    restockGrid.appendChild(card);
+  });
+  restockSection.appendChild(restockGrid);
+  content.appendChild(restockSection);
+
+  // --- SHOP UPGRADES ---
+  const categories = [
+    { key: 'shop',        title: '🏪 Laden-Upgrades' },
+    { key: 'equipment',   title: '⚙️ Ausrüstung' },
+    { key: 'ingredients', title: '🔓 Neue Zutaten freischalten' },
+  ];
+
+  categories.forEach(cat => {
+    const items = SHOP_ITEMS.filter(i => i.category === cat.key);
+    if (!items.length) return;
+    const section = document.createElement('div');
+    section.className = 'shop-section';
+    section.innerHTML = `<div class="shop-section-title">${cat.title}</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'shop-grid';
+    items.forEach(item => {
+      const owned      = gs.owned.has(item.id);
+      const reqMet     = !item.requires || gs.owned.has(item.requires);
+      const canAfford  = gs.money >= item.price;
+      const levelMet   = gs.shopLevel >= item.levelRequired;
+
+      let btnClass = 'buy-btn';
+      let btnText  = `Kaufen (€${item.price})`;
+      let disabled = false;
+
+      if (owned) {
+        btnClass += ' owned'; btnText = '✅ Gekauft'; disabled = true;
+      } else if (!reqMet) {
+        btnText = '🔒 Vorher kaufen'; disabled = true;
+      } else if (!levelMet) {
+        btnText = `🔒 Ab Level ${item.levelRequired}`; disabled = true;
+      } else if (!canAfford) {
+        disabled = true;
+      }
+
+      const card = document.createElement('div');
+      card.className = 'shop-card';
+      card.innerHTML = `
+        <div class="shop-card-icon">${item.icon}</div>
+        <div class="shop-card-name">${item.name}</div>
+        <div class="shop-card-desc">${item.desc}</div>
+        ${!owned ? `<div class="shop-card-price">€${item.price.toFixed(2)}</div>` : ''}
+        <button class="${btnClass}" ${disabled ? 'disabled' : ''} onclick="buyShopItem('${item.id}')">
+          ${btnText}
+        </button>`;
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);
+    content.appendChild(section);
+  });
+}
+
+function buyRestock(key) {
+  const ing = INGREDIENTS[key];
+  if (!ing || gs.money < ing.price) { toast('❌ Nicht genug Geld!'); return; }
+  gs.money -= ing.price;
+  gs.inventory[key] = (gs.inventory[key] || 0) + ing.restockAmt;
+  toast(`✅ ${ing.name} aufgefüllt! (+${ing.restockAmt})`);
+  updateHUD();
+  renderShop();
+}
+
+function buyShopItem(id) {
+  const item = SHOP_ITEMS.find(i => i.id === id);
+  if (!item || gs.owned.has(id)) return;
+  if (gs.money < item.price) { toast('❌ Nicht genug Geld!'); return; }
+
+  gs.money -= item.price;
+  gs.owned.add(id);
+
+  // apply effect
+  if (id === 'upgrade_shop_2') { upgradeShop(2); }
+  else if (id === 'upgrade_shop_3') { upgradeShop(3); }
+  else if (id === 'upgrade_shop_4') { upgradeShop(4); }
+  else if (id === 'upgrade_grill_2') { gs.grillLevel = 2; toast('🔥 Profi-Grill aktiv!'); }
+  else if (id === 'upgrade_grill_3') { gs.grillLevel = 3; toast('⚡ Turbo-Grill aktiv!'); }
+  else if (id === 'upgrade_knife')   { gs.knifeUpgrade = true; toast('🔪 Profi-Messer ausgerüstet!'); }
+  else if (id === 'upgrade_pide')    { gs.pideUpgrade  = true; toast('🫓 Premium Pide aktiv!'); }
+  else if (item.unlocks) {
+    INGREDIENTS[item.unlocks].locked = false;
+    gs.inventory[item.unlocks] = INGREDIENTS[item.unlocks].restockAmt;
+    toast(`🔓 ${INGREDIENTS[item.unlocks].name} freigeschaltet!`);
+  }
+
+  updateHUD();
+  renderShop();
+}
+
+function upgradeShop(level) {
+  gs.shopLevel = level;
+  const names = ['','Kiosk','Kleiner Laden','Großer Laden','Döner-Palast'];
+  const icons = ['','🏠','🏪','🏬','🏢'];
+  showLevelUp(icons[level] + ' ' + names[level] + '!', `Mehr Kunden, mehr Geld!`);
+  updateHUD();
+  // rebuild cars (more cars at higher level)
+  const outside = document.getElementById('outside');
+  outside.querySelectorAll('.car').forEach(c => c.remove());
+  buildCars();
+}
+
+// ═══════════════════════════════════════════════════════════
+// LEVEL UP SCREEN
+// ═══════════════════════════════════════════════════════════
+function showLevelUp(title, sub) {
+  document.getElementById('levelup-title').textContent = title;
+  document.getElementById('levelup-sub').textContent   = sub;
+  document.getElementById('levelup-screen').classList.add('show');
+}
+function closeLevelUp() {
+  document.getElementById('levelup-screen').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════════
+function openStats() {
+  const modal   = document.getElementById('stats-modal');
+  const content = document.getElementById('stats-content');
+  content.innerHTML = `
+    <div class="stat-card"><div class="stat-card-val">${gs.stats.served}</div><div class="stat-card-label">Döner serviert</div></div>
+    <div class="stat-card"><div class="stat-card-val">€${gs.stats.totalEarned.toFixed(2)}</div><div class="stat-card-label">Gesamteinnahmen</div></div>
+    <div class="stat-card"><div class="stat-card-val">${gs.stats.happy}</div><div class="stat-card-label">Zufriedene Kunden</div></div>
+    <div class="stat-card"><div class="stat-card-val">${gs.stats.angry}</div><div class="stat-card-label">Gegangene Kunden</div></div>
+    <div class="stat-card"><div class="stat-card-val">€${gs.money.toFixed(2)}</div><div class="stat-card-label">Aktuelles Geld</div></div>
+    <div class="stat-card"><div class="stat-card-val">${LEVEL_NAMES[gs.shopLevel]}</div><div class="stat-card-label">Aktueller Laden</div></div>
+  `;
+  modal.classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2600);
+}
+
+function showMoneyFloat(msg, color, angry = false) {
+  const el = document.createElement('div');
+  el.className = 'money-float' + (angry ? ' angry-float' : '');
+  el.textContent = msg;
+  el.style.color = color;
+  el.style.left  = (30 + Math.random() * 40) + '%';
+  el.style.top   = '40%';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1900);
+}
+
+// ═══════════════════════════════════════════════════════════
+// Also allow clicking ingredient icons to add them
+// ═══════════════════════════════════════════════════════════
+document.getElementById('ingredient-bar').addEventListener('click', e => {
+  const icon = e.target.closest('.ing-icon[data-ing]');
+  if (icon) clickAddIngredient(icon.dataset.ing);
+});
+
+// ═══════════════════════════════════════════════════════════
+// POLYFILL for findLastIndex
+// ═══════════════════════════════════════════════════════════
+if (!Array.prototype.findLastIndex) {
+  Array.prototype.findLastIndex = function(pred) {
+    for (let i = this.length - 1; i >= 0; i--) {
+      if (pred(this[i], i, this)) return i;
+    }
+    return -1;
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
