@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/", "destination": "/doener-kebap-game.html" }
-  ]
-}
