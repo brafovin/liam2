@@ -727,7 +727,7 @@ function render() {
 function drawBike(sx, sy) {
   const ang = Math.atan2(front.y - rear.y, front.x - rear.x);
   const cos = Math.cos(ang), sin = Math.sin(ang);
-  const px = -sin, py = cos;
+  const px = sin, py = -cos;  // perpendicular pointing UP in canvas (y-down) space
 
   const frx = sx(front.x), fry = sy(front.y);
   const rrx = sx(rear.x),  rry = sy(rear.y);
