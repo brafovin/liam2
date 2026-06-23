@@ -283,7 +283,7 @@ const INPUTS = { up:false, down:false, left:false, right:false };
 
 function initBike() {
   const sx = 0;
-  const sy = terrainY(sx) - WHEEL_R - 5;
+  const sy = terrainY(sx) - WHEEL_R - 280;
   front = { x: sx + WHEELBASE * 0.5, y: sy, vx: 0, vy: 0, spin: 0, grounded: false };
   rear  = { x: sx - WHEELBASE * 0.5, y: sy, vx: 0, vy: 0, spin: 0, grounded: false };
   state = { score: 0, time: 0, airTime: 0, maxAir: 0, crashed: false };
