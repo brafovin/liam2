@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Döner Simulator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;font-family:'Inter',sans-serif;overflow:hidden;height:100vh;user-select:none}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+#game{width:100vw;height:100vh;display:flex;flex-direction:column}
+
+/* ── OUTSIDE ────────────────────────────────────────── */
+#outside{
+  height:16%;flex-shrink:0;
+  background:linear-gradient(180deg,#87CEEB 0%,#b8e0f7 60%,#a8d070 60%,#7ab040 100%);
+  position:relative;overflow:hidden;border-bottom:12px solid #4a2c0e;
+}
+.win-bar{position:absolute;background:#4a2c0e}
+.win-bar.h{left:0;right:0;height:10px}
+.win-bar.h.top{top:0}.win-bar.h.mid{top:50%}
+.win-bar.v{top:0;bottom:0;width:10px}
+.win-bar.v.v1{left:33%}.win-bar.v.v2{left:66%}
+.street-car{
+  position:absolute;bottom:5%;height:28px;
+  border-radius:6px 10px 4px 4px;
+  animation:carSlide linear infinite;
+}
+.street-car::after{content:'';position:absolute;top:2px;left:10%;right:10%;height:12px;background:rgba(100,200,255,.55);border-radius:3px 5px 2px 2px}
+.wheel-s{position:absolute;bottom:-7px;width:12px;height:12px;background:#222;border-radius:50%;border:2px solid #888}
+.wheel-s.l{left:8px}.wheel-s.r{right:8px}
+@keyframes carSlide{from{left:-120px}to{left:calc(100% + 120px)}}
+.pedestrian{position:absolute;bottom:12%;font-size:22px;animation:walkBy linear infinite}
+@keyframes walkBy{from{left:-40px}to{left:calc(100% + 40px)}}
+.cloud-s{position:absolute;background:rgba(255,255,255,.85);border-radius:50px;animation:cloudDrift linear infinite}
+@keyframes cloudDrift{from{left:-200px}to{left:calc(100% + 200px)}}
+
+/* ── BACK WALL (stations) ─────────────────────────────── */
+#stations{
+  height:32%;flex-shrink:0;
+  background:linear-gradient(180deg,#f5e8d0 0%,#e8d0a8 100%);
+  display:flex;border-bottom:6px solid #7a5020;
+  position:relative;
+}
+.station{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:8px;border-right:2px solid rgba(0,0,0,.12);
+  cursor:pointer;transition:background .15s;position:relative;
+}
+.station:last-child{border-right:none}
+.station:hover{background:rgba(0,0,0,.06)}
+.station-label{font-size:10px;font-weight:700;color:#666;letter-spacing:.5px;text-transform:uppercase}
+.station-badge{
+  position:absolute;top:6px;right:8px;
+  background:#e74c3c;color:#fff;border-radius:10px;
+  font-size:10px;font-weight:700;padding:1px 6px;
+  display:none;
+}
+.station-badge.show{display:block}
+
+/* spit canvas */
+#spit-canvas{border-radius:8px;cursor:pointer}
+#spit-btn{
+  background:linear-gradient(180deg,#c0392b,#a93226);
+  color:#fff;border:none;padding:6px 14px;border-radius:6px;
+  font-size:11px;font-weight:700;cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+  transition:transform .1s;
+}
+#spit-btn:hover{transform:scale(1.05)}
+#spit-btn:disabled{background:#888;cursor:not-allowed;transform:none}
+#meat-count{font-size:11px;color:#666;font-weight:600}
+
+/* grill */
+#grill-canvas{border-radius:6px}
+#grill-btns{display:flex;gap:6px}
+.grill-btn{
+  background:#e67e22;color:#fff;border:none;
+  padding:5px 10px;border-radius:5px;font-size:10px;font-weight:700;
+  cursor:pointer;transition:all .1s;
+}
+.grill-btn:hover{background:#d35400;transform:scale(1.05)}
+.grill-btn:disabled{background:#aaa;cursor:not-allowed;transform:none}
+.pide-slot{
+  width:60px;height:28px;
+  border:2px dashed #c0a060;border-radius:30px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;color:#c0a060;position:relative;
+  transition:all .3s;
+}
+.pide-slot.occupied{border-style:solid;border-color:#D2691E}
+.pide-toast-bar{
+  position:absolute;bottom:-4px;left:0;height:3px;
+  background:linear-gradient(90deg,#e67e22,#f39c12);
+  border-radius:2px;transition:width .3s;
+}
+
+/* veg prep */
+#veg-grid{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:140px}
+.veg-item{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;transition:transform .15s;
+}
+.veg-item:hover{transform:scale(1.1)}
+.veg-icon{
+  width:40px;height:40px;border-radius:8px;
+  background:rgba(255,255,255,.8);border:1.5px solid #c8a060;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;position:relative;
+}
+.veg-icon.chopped::after{
+  content:'✓';position:absolute;top:-4px;right:-4px;
+  width:14px;height:14px;border-radius:50%;
+  background:#2ecc71;color:#fff;font-size:9px;
+  display:flex;align-items:center;justify-content:center;
+}
+.veg-label{font-size:8px;color:#555;font-weight:600}
+.veg-count-badge{
+  position:absolute;top:-5px;left:-5px;
+  width:15px;height:15px;border-radius:50%;
+  background:#e74c3c;color:#fff;font-size:8px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* sauce */
+#sauce-area{display:flex;flex-direction:column;align-items:center;gap:8px}
+#sauce-bottles{display:flex;gap:8px}
+.sauce-bottle{
+  width:32px;height:70px;border-radius:8px 8px 6px 6px;
+  position:relative;cursor:pointer;transition:transform .15s;
+  display:flex;flex-direction:column;align-items:center;
+  border:2px solid rgba(0,0,0,.2);
+}
+.sauce-bottle:hover{transform:scale(1.08)}
+.sauce-bottle.selected{transform:scale(1.12);box-shadow:0 0 10px currentColor}
+.sauce-bottle-top{width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.2);margin-top:4px}
+.sauce-label{font-size:7px;font-weight:700;color:#fff;position:absolute;bottom:4px;text-align:center;width:100%}
+.sauce-level{
+  position:absolute;bottom:4px;left:3px;right:3px;
+  border-radius:4px;transition:height .3s;
+}
+
+/* ── ASSEMBLY ────────────────────────────────────────── */
+#assembly{
+  flex:1;
+  background:linear-gradient(180deg,#2a1a0e 0%,#1a0e06 100%);
+  display:flex;align-items:center;justify-content:center;
+  gap:24px;padding:10px 20px;position:relative;
+}
+.table-edge{position:absolute;top:0;left:0;right:0;height:10px;background:linear-gradient(180deg,#8B6914,#6a5010)}
+#assembly-canvas{border-radius:10px;border:2px solid rgba(255,200,100,.2)}
+
+.assembly-panel{display:flex;flex-direction:column;gap:8px;min-width:140px}
+.assembly-panel-title{color:#FFD700;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.step-list{display:flex;flex-direction:column;gap:4px}
+.step-item{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:rgba(255,255,255,.5);
+}
+.step-item.done{color:#2ecc71}
+.step-item.active{color:#FFD700;font-weight:600}
+.step-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+#action-btns{display:flex;flex-direction:column;gap:8px}
+.action-btn{
+  padding:10px 18px;border-radius:8px;border:none;
+  font-size:12px;font-weight:700;cursor:pointer;
+  transition:all .15s;text-align:center;
+}
+.action-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.action-btn:disabled{background:#333;color:#666;cursor:not-allowed;transform:none}
+#btn-pide{background:linear-gradient(180deg,#c87830,#a05010);color:#fff}
+#btn-meat{background:linear-gradient(180deg,#8B2020,#6a1818);color:#fff}
+#btn-sauce{background:linear-gradient(180deg,#e8e8e8,#c8c8c8);color:#333}
+#btn-sauce.active{background:linear-gradient(180deg,#c8e8b8,#a8c898)}
+#btn-fold{background:linear-gradient(180deg,#1a6a30,#145020);color:#fff}
+#btn-serve{background:linear-gradient(180deg,#e67e22,#c0392b);color:#fff;font-size:14px}
+#btn-clear{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.15)}
+
+/* ── CUSTOMER ────────────────────────────────────────── */
+#customer-area{
+  height:18%;flex-shrink:0;
+  background:linear-gradient(180deg,#b07030 0%,#905020 100%);
+  border-top:4px solid #7a5020;border-bottom:4px solid #5a3010;
+  display:flex;align-items:center;padding:0 16px;gap:12px;
+  position:relative;overflow:hidden;
+}
+.counter-ledge{position:absolute;top:0;left:0;right:0;height:10px;background:linear-gradient(180deg,#9a7030,#7a5020)}
+.counter-front{position:absolute;bottom:0;left:0;right:0;height:16px;background:linear-gradient(180deg,#7a5020,#5a3010)}
+#cust-sprite{font-size:56px;flex-shrink:0;margin-top:6px;transition:all .4s}
+#cust-sprite.walkin{animation:custIn .4s ease-out}
+@keyframes custIn{from{transform:translateX(-60px);opacity:0}to{transform:translateX(0);opacity:1}}
+.bubble{
+  background:#fff;border-radius:12px;padding:8px 12px;
+  position:relative;max-width:160px;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;
+}
+.bubble::before{content:'';position:absolute;left:-9px;top:50%;transform:translateY(-50%);border:5px solid transparent;border-right-color:#fff}
+.bubble-name{font-size:9px;font-weight:700;color:#888;margin-bottom:2px}
+.bubble-text{font-size:11px;color:#333}
+#order-card{
+  flex:1;background:rgba(255,255,255,.92);border-radius:10px;
+  padding:8px 12px;border:2px solid #8B6914;
+  box-shadow:0 2px 10px rgba(0,0,0,.2);display:none;
+}
+.order-title{font-size:10px;font-weight:700;color:#888;margin-bottom:5px;text-transform:uppercase}
+.order-chips{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px}
+.order-chip{
+  background:#f5e6c8;border:1.5px solid #c8a060;
+  border-radius:10px;padding:2px 7px;font-size:10px;
+}
+.order-chip.ok{background:#d4edda;border-color:#28a745;color:#155724}
+.patience-row{display:flex;align-items:center;gap:6px}
+.patience-track{flex:1;height:6px;background:#ddd;border-radius:3px;overflow:hidden}
+.patience-fill{height:100%;background:#2ecc71;border-radius:3px;transition:width .15s,background .4s}
+.tip-label{font-size:10px;color:#27ae60;font-weight:700;white-space:nowrap}
+#next-cust-row{position:absolute;bottom:16px;left:16px;right:16px;height:4px;background:rgba(0,0,0,.2);border-radius:2px;overflow:hidden}
+.ncf{height:100%;background:rgba(255,255,255,.4);border-radius:2px}
+#no-cust{flex:1;text-align:center;color:rgba(255,255,255,.5);font-size:13px}
+
+/* ── HUD ────────────────────────────────────────────── */
+#hud{
+  height:44px;flex-shrink:0;
+  background:#080502;border-top:2px solid #8B6914;
+  display:flex;align-items:center;padding:0 14px;gap:14px;
+}
+.hpill{color:#FFD700;font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.hpill .v{color:#fff}
+.hdiv{width:1px;height:22px;background:rgba(255,215,0,.18)}
+#hud-right{margin-left:auto;display:flex;gap:8px}
+.hbtn{padding:6px 13px;border-radius:7px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:transform .1s}
+.hbtn:hover{transform:scale(1.05)}
+#shop-btn{background:#FFD700;color:#080502}
+#info-btn{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
+
+/* ── SHOP MODAL ──────────────────────────────────────── */
+#shop-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
+  z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(5px);
+}
+#shop-modal.open{display:flex}
+.shop-box{
+  background:linear-gradient(160deg,#0c1e36,#081422);
+  border:2px solid #2ecc71;border-radius:16px;
+  width:min(700px,96vw);max-height:86vh;overflow-y:auto;
+  padding:22px;color:#fff;
+  scrollbar-width:thin;scrollbar-color:#2ecc71 transparent;
+}
+.shop-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.shop-ttl{font-size:20px;font-weight:900;color:#2ecc71}
+.shop-close{background:#c0392b;color:#fff;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px}
+.shop-sec{margin-bottom:20px}
+.shop-sec-ttl{font-size:12px;font-weight:700;color:#FFD700;padding-bottom:5px;border-bottom:1px solid rgba(255,215,0,.2);margin-bottom:10px;letter-spacing:.5px}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px}
+.scard{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:10px;padding:10px;text-align:center;transition:background .2s,transform .1s;cursor:pointer}
+.scard:hover{background:rgba(255,255,255,.13);transform:translateY(-2px)}
+.scard-icon{font-size:30px;margin-bottom:4px}
+.scard-name{font-size:12px;font-weight:700;margin-bottom:2px}
+.scard-desc{font-size:10px;color:#aaa;margin-bottom:6px}
+.scard-price{font-size:13px;color:#FFD700;font-weight:700;margin-bottom:6px}
+.sbuy{width:100%;background:#27ae60;color:#fff;border:none;padding:5px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;transition:background .15s}
+.sbuy:hover:not(:disabled){background:#2ecc71}
+.sbuy:disabled{background:#444;cursor:not-allowed}
+.sbuy.owned{background:#2980b9}
+.sbuy.restock{background:#e67e22}
+.sbuy.restock:hover:not(:disabled){background:#f39c12}
+
+/* ── TOASTS ──────────────────────────────────────────── */
+.toast{
+  position:fixed;top:22%;left:50%;transform:translateX(-50%) translateY(-20px);
+  background:rgba(0,0,0,.92);color:#fff;padding:11px 22px;border-radius:10px;
+  font-size:15px;font-weight:700;z-index:500;border:2px solid #FFD700;
+  animation:toastAnim 2.6s forwards;pointer-events:none;white-space:nowrap;
+}
+@keyframes toastAnim{0%{opacity:0;transform:translateX(-50%) translateY(-30px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-20px)}}
+.mfloat{position:fixed;font-size:19px;font-weight:700;pointer-events:none;z-index:400;animation:mFloat 1.8s forwards}
+@keyframes mFloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(.8)}}
+</style>
+</head>
+<body>
+<div id="game">
+
+  <!-- OUTSIDE -->
+  <div id="outside">
+    <div class="win-bar h top"></div>
+    <div class="win-bar h mid"></div>
+    <div class="win-bar v v1"></div>
+    <div class="win-bar v v2"></div>
+  </div>
+
+  <!-- STATIONS -->
+  <div id="stations">
+
+    <!-- 1: Döner Spit -->
+    <div class="station" id="st-spit">
+      <div class="station-label">🔥 Dönerspieß</div>
+      <canvas id="spit-canvas" width="90" height="110"></canvas>
+      <div id="meat-count">Fleisch: <b id="mc-num">50</b></div>
+      <button id="spit-btn" onclick="sliceMeat()">✂️ Schneiden</button>
+      <div class="station-badge" id="meat-badge">Fleisch!</div>
+    </div>
+
+    <!-- 2: Pide Grill -->
+    <div class="station" id="st-grill">
+      <div class="station-label">🫓 Pide-Grill</div>
+      <canvas id="grill-canvas" width="130" height="80"></canvas>
+      <div id="grill-btns">
+        <button class="grill-btn" id="btn-add-pide" onclick="addPideToGrill()">+ Pide</button>
+        <button class="grill-btn" id="btn-take-pide" onclick="takePideFromGrill()" disabled>Nehmen</button>
+      </div>
+      <div class="station-badge" id="pide-badge">Fertig!</div>
+    </div>
+
+    <!-- 3: Vegetable Prep -->
+    <div class="station" id="st-veg">
+      <div class="station-label">🔪 Zutaten</div>
+      <div id="veg-grid"></div>
+    </div>
+
+    <!-- 4: Sauces -->
+    <div class="station" id="st-sauce">
+      <div class="station-label">🫙 Soßen</div>
+      <div id="sauce-area">
+        <div id="sauce-bottles"></div>
+        <div id="sauce-sel-label" style="font-size:10px;color:#888;font-weight:600">— keine ausgewählt —</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ASSEMBLY -->
+  <div id="assembly">
+    <div class="table-edge"></div>
+
+    <!-- Step tracker -->
+    <div class="assembly-panel">
+      <div class="assembly-panel-title">📋 Bestellung</div>
+      <div class="step-list" id="step-list"></div>
+    </div>
+
+    <canvas id="assembly-canvas" width="340" height="160"></canvas>
+
+    <div class="assembly-panel">
+      <div class="assembly-panel-title">⚙️ Aktionen</div>
+      <div id="action-btns">
+        <button class="action-btn" id="btn-pide"  onclick="asmAddPide()"  disabled>🫓 Pide einlegen</button>
+        <button class="action-btn" id="btn-meat"  onclick="asmAddMeat()"  disabled>🥩 Fleisch drauf</button>
+        <button class="action-btn" id="btn-sauce" onclick="asmToggleSauce()" disabled>🫙 Soße gießen</button>
+        <button class="action-btn" id="btn-fold"  onclick="asmFold()"    disabled>📦 Einwickeln</button>
+        <button class="action-btn" id="btn-serve" onclick="serveDoner()" disabled>🚀 Servieren!</button>
+        <button class="action-btn" id="btn-clear" onclick="clearAssembly()">🗑 Leeren</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER -->
+  <div id="customer-area">
+    <div class="counter-ledge"></div>
+    <div id="cust-sprite">🚶</div>
+    <div class="bubble" id="bubble">
+      <div class="bubble-name" id="bname"></div>
+      <div class="bubble-text" id="btext"></div>
+    </div>
+    <div id="order-card">
+      <div class="order-title">Bestellung</div>
+      <div class="order-chips" id="order-chips"></div>
+      <div class="patience-row">
+        <span style="font-size:10px">⏰</span>
+        <div class="patience-track"><div class="patience-fill" id="pfill"></div></div>
+        <span class="tip-label" id="tip-lbl">+€0.00</span>
+      </div>
+    </div>
+    <div id="no-cust">Warte auf nächsten Kunden…</div>
+    <div id="next-cust-row"><div class="ncf" id="ncf" style="width:0%"></div></div>
+    <div class="counter-front"></div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hpill">💰 <span class="v" id="h-money">€30.00</span></div>
+    <div class="hdiv"></div>
+    <div class="hpill">⭐ <span class="v" id="h-level">Kiosk</span></div>
+    <div class="hdiv"></div>
+    <div class="hpill">🥙 <span class="v" id="h-served">0</span> serviert</div>
+    <div class="hdiv"></div>
+    <div class="hpill">😊 <span class="v" id="h-happy">0</span></div>
+    <div id="hud-right">
+      <button class="hbtn" id="info-btn" onclick="openInfo()">ℹ️ Anleitung</button>
+      <button class="hbtn" id="shop-btn" onclick="openShop()">🛒 Shop</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div id="shop-modal">
+  <div class="shop-box">
+    <div class="shop-hdr">
+      <div class="shop-ttl">🛒 Döner Shop</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span style="color:#FFD700;font-weight:700" id="sh-money">€30.00</span>
+        <button class="shop-close" onclick="closeShop()">✕</button>
+      </div>
+    </div>
+    <div id="shop-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════
+const VEGS = {
+  lettuce:{ emoji:'🥬', name:'Salat',    price:2.5,  restockAmt:40, restock:.25, locked:false },
+  tomato: { emoji:'🍅', name:'Tomate',   price:3.0,  restockAmt:40, restock:.30, locked:false },
+  onion:  { emoji:'🧅', name:'Zwiebel',  price:2.0,  restockAmt:40, restock:.20, locked:false },
+  cabbage:{ emoji:'🥦', name:'Rotkohl',  price:3.0,  restockAmt:40, restock:.20, locked:true  },
+  corn:   { emoji:'🌽', name:'Mais',     price:3.5,  restockAmt:35, restock:.25, locked:true  },
+  pepper: { emoji:'🫑', name:'Paprika',  price:3.5,  restockAmt:35, restock:.30, locked:true  },
+};
+const SAUCES = {
+  white: { name:'Knoblauch', color:'#f5f5e8', border:'#d0d0b0', label:'🤍 Knob' },
+  hot:   { name:'Scharf',    color:'#e84040', border:'#c02020', label:'🌶️ Scharf', locked:true },
+  herb:  { name:'Kräuter',   color:'#60a840', border:'#408028', label:'🌿 Kräuter', locked:true },
+};
+const NAMES = ['Ahmet','Lars','Zeynep','Marco','Fatima','Kevin','Björn','Selin'];
+const EMOJIS = ['👨','👩','🧔','👴','👧','🧑','👦','👵'];
+const QUIPS = ['Einmal bitte!','Mit allem?','Ich hab Hunger!','Mach schnell!','Scharf bitte!'];
+
+const SHOP_ITEMS = [
+  { id:'up_shop2',  cat:'shop', icon:'🏪', name:'Kleiner Laden',  desc:'Mehr Kunden, +50% Kundenstrom', price:350, req:null     },
+  { id:'up_shop3',  cat:'shop', icon:'🏬', name:'Großer Laden',   desc:'Bester Standort! +100% Kunden', price:1500,req:'up_shop2'},
+  { id:'up_shop4',  cat:'shop', icon:'🏢', name:'Döner Palast',   desc:'Stadtmitte! Mega-Preise',        price:5000,req:'up_shop3'},
+  { id:'up_grill2', cat:'equip',icon:'🔥', name:'Profi-Grill',    desc:'Pide toastet 50% schneller',     price:180, req:null     },
+  { id:'up_grill3', cat:'equip',icon:'⚡', name:'Turbo-Grill',    desc:'Maximale Grillgeschwindigkeit',  price:500, req:'up_grill2'},
+  { id:'up_knife',  cat:'equip',icon:'🔪', name:'Profi-Messer',   desc:'Doppelte Fleischmenge pro Schnitt', price:140,req:null  },
+  { id:'up_pide',   cat:'equip',icon:'🫓', name:'Premium Pide',   desc:'Besseres Brot, +€1 pro Döner',   price:120, req:null     },
+  { id:'un_hot',    cat:'ing',  icon:'🌶️', name:'Scharfe Soße',   desc:'Sehr beliebt bei Kunden',        price:45,  unlocks:'hot'},
+  { id:'un_herb',   cat:'ing',  icon:'🌿', name:'Kräuter Soße',   desc:'Premium Soße, höhere Preise',    price:60,  unlocks:'herb'},
+  { id:'un_cab',    cat:'ing',  icon:'🥦', name:'Rotkohl',        desc:'Klassisch und beliebt',           price:30,  unlocks:'cabbage'},
+  { id:'un_corn',   cat:'ing',  icon:'🌽', name:'Mais',           desc:'Süßer Kontrast',                  price:35,  unlocks:'corn'},
+  { id:'un_pepper', cat:'ing',  icon:'🫑', name:'Paprika',        desc:'Mehr Farbe im Döner',             price:40,  unlocks:'pepper'},
+];
+
+const LEVEL_NAMES = ['','Kiosk','Kleiner Laden','Großer Laden','Döner Palast'];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const gs = {
+  money: 30,
+  shopLevel: 1,
+  grillLevel: 1,
+  knifeUpgrade: false,
+  pideUpgrade: false,
+  owned: new Set(),
+  inv: {
+    meat: 50,
+    pide: 20,
+    lettuce: 40, tomato: 40, onion: 40,
+    cabbage: 0, corn: 0, pepper: 0,
+    sauce_white: 80, sauce_hot: 0, sauce_herb: 0,
+  },
+  stats: { served: 0, happy: 0, angry: 0, earned: 0 },
+};
+
+// grill state
+const grill = {
+  slots: [null, null],   // each: {toast:0, ready:false}
+};
+
+// assembly state
+const asm = {
+  hasPide: false,
+  meatAmt: 0,    // 0-3
+  veggies: [],   // list of veg keys
+  sauce: null,
+  folded: false,
+};
+
+// veg prep state
+const vegPrepped = {};
+
+// selected sauce
+let selectedSauce = null;
+
+// meat on board (ready to add)
+let meatReady = 0;
+
+// customer
+let customer = null;
+let patiencePct = 100;
+let patienceInterval = null;
+let nextCustTimer = null;
+let nextCustInterval = null;
+
+// ═══════════════════════════════════════════════════════════════
+// OUTSIDE SCENE
+// ═══════════════════════════════════════════════════════════════
+(function buildOutside() {
+  const o = document.getElementById('outside');
+  // clouds
+  for (let i=0;i<5;i++){
+    const c=document.createElement('div');
+    c.className='cloud-s';
+    const w=60+Math.random()*80, h=20+Math.random()*14;
+    c.style.cssText=`width:${w}px;height:${h}px;top:${5+Math.random()*25}%;animation-duration:${20+Math.random()*20}s;animation-delay:${-Math.random()*30}s`;
+    o.appendChild(c);
+  }
+  // cars
+  const carColors=['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#eee','#e67e22'];
+  for(let i=0;i<8;i++){
+    const car=document.createElement('div');
+    car.className='street-car';
+    const col=carColors[i%carColors.length];
+    const dur=(2.5+Math.random()*3.5).toFixed(1);
+    car.style.cssText=`background:${col};width:${60+Math.random()*30}px;animation-duration:${dur}s;animation-delay:${(-Math.random()*6).toFixed(1)}s;bottom:${3+Math.random()*8}%`;
+    car.innerHTML=`<div class="wheel-s l"></div><div class="wheel-s r"></div>`;
+    o.appendChild(car);
+  }
+  // pedestrians
+  const peds=['🚶','🏃','🧍','👨‍💼','👩‍💼'];
+  for(let i=0;i<4;i++){
+    const p=document.createElement('div');
+    p.className='pedestrian';
+    p.textContent=peds[i%peds.length];
+    p.style.cssText=`bottom:${12+Math.random()*4}%;animation-duration:${8+Math.random()*8}s;animation-delay:${(-Math.random()*12).toFixed(1)}s`;
+    o.appendChild(p);
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// SPIT CANVAS
+// ═══════════════════════════════════════════════════════════════
+const spitCanvas = document.getElementById('spit-canvas');
+const spitCtx = spitCanvas.getContext('2d');
+let spitAngle = 0;
+
+function drawSpit() {
+  const ctx = spitCtx;
+  const W=90, H=110;
+  ctx.clearRect(0,0,W,H);
+
+  // pole
+  ctx.fillStyle='linear-gradient';
+  const pg=ctx.createLinearGradient(42,0,48,0);
+  pg.addColorStop(0,'#888');pg.addColorStop(.5,'#eee');pg.addColorStop(1,'#888');
+  ctx.fillStyle=pg;
+  ctx.fillRect(42,0,6,H);
+
+  // meat cone
+  const maxW=38, minW=10;
+  const depletion = 1 - (gs.inv.meat/100);
+  const effectW = maxW - depletion*20;
+
+  for(let y=10;y<H-10;y+=2){
+    const t=(y-10)/(H-20);
+    const w = (effectW*(1-t) + minW*t)*Math.max(.3,1-depletion*.6);
+    const shade=Math.sin(t*Math.PI*6+spitAngle)*0.18;
+    const r=Math.round(160+shade*60);
+    const g=Math.round(80+shade*30);
+    const b=Math.round(40+shade*20);
+    ctx.fillStyle=`rgb(${r},${g},${b})`;
+    ctx.fillRect(45-w/2,y,w,2);
+  }
+
+  // heating glow at bottom
+  const glow=ctx.createLinearGradient(30,H-25,30,H-5);
+  glow.addColorStop(0,'rgba(255,100,0,.15)');
+  glow.addColorStop(1,'rgba(255,200,0,.08)');
+  ctx.fillStyle=glow;
+  ctx.fillRect(20,H-25,50,22);
+
+  // drip dots (fat droplets)
+  ctx.fillStyle='#8B4513';
+  for(let i=0;i<3;i++){
+    ctx.beginPath();
+    ctx.arc(38+Math.sin(spitAngle+i*2)*8, H-8-i*6, 2, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GRILL CANVAS
+// ═══════════════════════════════════════════════════════════════
+const grillCanvas = document.getElementById('grill-canvas');
+const grillCtx = grillCanvas.getContext('2d');
+const GRILL_DURATION = 8000; // ms to toast pide (modified by upgrade)
+
+function drawGrill() {
+  const ctx = grillCtx;
+  const W=130, H=80;
+  ctx.clearRect(0,0,W,H);
+
+  // grill body
+  const bg=ctx.createLinearGradient(0,20,0,H);
+  bg.addColorStop(0,'#3a3a3a');bg.addColorStop(1,'#222');
+  ctx.fillStyle=bg;
+  ctx.beginPath();
+  ctx.roundRect(5,20,W-10,H-22,6);
+  ctx.fill();
+
+  // grill bars
+  ctx.strokeStyle='#555';ctx.lineWidth=3;
+  for(let x=14;x<W-12;x+=8){
+    ctx.beginPath();ctx.moveTo(x,22);ctx.lineTo(x,H-4);ctx.stroke();
+  }
+
+  // heat glow
+  const heatG=ctx.createLinearGradient(0,H-20,0,H);
+  heatG.addColorStop(0,'rgba(255,80,0,.22)');heatG.addColorStop(1,'rgba(255,160,0,.08)');
+  ctx.fillStyle=heatG;
+  ctx.fillRect(5,H-22,W-10,22);
+
+  // two pide slots
+  grill.slots.forEach((slot,i)=>{
+    const sx=12+i*62, sy=8, sw=52, sh=22;
+    ctx.strokeStyle='rgba(255,200,100,.3)';ctx.lineWidth=1.5;
+    ctx.setLineDash([4,3]);
+    ctx.strokeRect(sx,sy,sw,sh);
+    ctx.setLineDash([]);
+
+    if(slot){
+      const toast=slot.toast; // 0-100
+      const r=Math.round(200+toast*.55);
+      const g=Math.round(160-toast*.8);
+      const b=Math.round(80-toast*.6);
+      ctx.fillStyle=`rgb(${r},${g},${b})`;
+      ctx.beginPath();
+      ctx.ellipse(sx+sw/2,sy+sh/2,sw/2-2,sh/2-2,0,0,Math.PI*2);
+      ctx.fill();
+      // sesame dots
+      if(toast>20){
+        ctx.fillStyle=`rgba(100,60,20,${toast/100})`;
+        [[0,0],[1,1],[-1,1],[.5,-1]].forEach(([dx,dy])=>{
+          ctx.beginPath();ctx.arc(sx+sw/2+dx*8,sy+sh/2+dy*4,1.5,0,Math.PI*2);ctx.fill();
+        });
+      }
+      // burn indicator
+      if(toast>=100){
+        ctx.fillStyle='rgba(0,0,0,.4)';
+        ctx.beginPath();
+        ctx.ellipse(sx+sw/2,sy+sh/2,sw/2-2,sh/2-2,0,0,Math.PI*2);
+        ctx.fill();
+      }
+      // toast bar
+      const barW=(sw-4)*Math.min(1,toast/100);
+      ctx.fillStyle=toast>=100?'#e74c3c':toast>80?'#f39c12':'#2ecc71';
+      ctx.fillRect(sx+2,sy+sh+2,barW,3);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ASSEMBLY CANVAS
+// ═══════════════════════════════════════════════════════════════
+const asmCanvas = document.getElementById('assembly-canvas');
+const asmCtx = asmCanvas.getContext('2d');
+
+function drawAssembly() {
+  const ctx = asmCtx;
+  const W=340, H=160;
+  ctx.clearRect(0,0,W,H);
+
+  // table surface
+  const tg=ctx.createLinearGradient(0,0,0,H);
+  tg.addColorStop(0,'#2a1a0e');tg.addColorStop(1,'#1a0e06');
+  ctx.fillStyle=tg;
+  ctx.fillRect(0,0,W,H);
+
+  if(!asm.hasPide){
+    ctx.fillStyle='rgba(255,200,100,.25)';
+    ctx.setLineDash([6,4]);
+    ctx.strokeStyle='rgba(255,200,100,.35)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.ellipse(W/2,H/2,120,40,0,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font='13px Inter';ctx.fillStyle='rgba(255,200,100,.4)';ctx.textAlign='center';
+    ctx.fillText('Pide einlegen', W/2, H/2+5);
+    return;
+  }
+
+  // pide base
+  const pg2=ctx.createLinearGradient(80,H-60,260,H-60);
+  const pideColor = gs.pideUpgrade ? '#d4904a' : '#c87030';
+  pg2.addColorStop(0,pideColor);
+  pg2.addColorStop(.5,'#e8a860');
+  pg2.addColorStop(1,pideColor);
+  ctx.fillStyle=pg2;
+  ctx.beginPath();ctx.ellipse(W/2,H-45,125,38,0,0,Math.PI*2);ctx.fill();
+  // pide top half (open)
+  ctx.fillStyle='rgba(0,0,0,.15)';
+  ctx.beginPath();ctx.ellipse(W/2,H-45,125,38,0,Math.PI,Math.PI*2);ctx.fill();
+
+  // sesame seeds on pide
+  ctx.fillStyle='#b07030';
+  for(let i=0;i<8;i++){
+    const a=i/8*Math.PI;
+    ctx.beginPath();ctx.ellipse(W/2+Math.cos(a)*80,H-45+Math.sin(a)*20,2,1,a,0,Math.PI*2);ctx.fill();
+  }
+
+  // meat layer
+  if(asm.meatAmt>0){
+    const meatColors=['#8B3010','#A04020','#7a2808'];
+    for(let i=0;i<Math.min(asm.meatAmt,3);i++){
+      meatColors.forEach((col,j)=>{
+        ctx.fillStyle=col;
+        ctx.beginPath();
+        const ox=(i-1)*25+j*4;
+        ctx.ellipse(W/2+ox,H-65-i*4,18+j*2,5,0.1,0,Math.PI*2);
+        ctx.fill();
+      });
+    }
+  }
+
+  // veg layers
+  const vegColors = {
+    lettuce:'#3a8a20', tomato:'#cc2020', onion:'#c868a0',
+    cabbage:'#7840a0', corn:'#e8c020', pepper:'#e04820'
+  };
+  asm.veggies.forEach((vk,i)=>{
+    const col=vegColors[vk]||'#888';
+    ctx.fillStyle=col;
+    for(let j=0;j<4;j++){
+      ctx.beginPath();
+      const ox=-50+j*30+i*8;
+      const r=6+Math.sin(i*j)*2;
+      ctx.ellipse(W/2+ox,H-72-asm.meatAmt*3-i*3,r,r*0.6,0,0,Math.PI*2);
+      ctx.fill();
+    }
+  });
+
+  // sauce drizzle
+  if(asm.sauce){
+    const sc = SAUCES[asm.sauce];
+    ctx.strokeStyle = sc.color;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    const oy = H-70-asm.meatAmt*3-asm.veggies.length*3;
+    for(let x=W/2-80;x<=W/2+80;x+=2){
+      const y=oy+Math.sin((x-W/2)*0.08)*6;
+      x===W/2-80 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // folded state
+  if(asm.folded){
+    ctx.fillStyle=pideColor;
+    ctx.beginPath();ctx.ellipse(W/2,H-65,125,32,.08,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,.2)';
+    ctx.beginPath();ctx.ellipse(W/2,H-65,125,32,.08,0,Math.PI);ctx.fill();
+    // wrap lines
+    ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=2;
+    for(let i=-2;i<=2;i++){
+      ctx.beginPath();
+      ctx.moveTo(W/2+i*35,H-90);ctx.lineTo(W/2+i*30,H-45);
+      ctx.stroke();
+    }
+    ctx.fillStyle='rgba(255,255,255,.9)';
+    ctx.font='bold 14px Inter';ctx.textAlign='center';
+    ctx.fillText('🥙 Fertig!',W/2,H-62);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VEG GRID
+// ═══════════════════════════════════════════════════════════════
+function buildVegGrid() {
+  const grid = document.getElementById('veg-grid');
+  grid.innerHTML = '';
+  Object.entries(VEGS).forEach(([key, veg]) => {
+    if(veg.locked) return;
+    const cnt = gs.inv[key] || 0;
+    const prepped = vegPrepped[key] || 0;
+    const item = document.createElement('div');
+    item.className = 'veg-item';
+    item.innerHTML = `
+      <div class="veg-icon${prepped>0?' chopped':''}" id="veg-${key}">
+        ${veg.emoji}
+        <div class="veg-count-badge">${cnt}</div>
+      </div>
+      <div class="veg-label">${veg.name}</div>
+    `;
+    item.onclick = () => prepVeg(key);
+    grid.appendChild(item);
+  });
+}
+
+function prepVeg(key) {
+  if(!customer){ toast('😴 Kein Kunde!'); return; }
+  const cnt = gs.inv[key] || 0;
+  if(cnt <= 0){ toast(`❌ Kein ${VEGS[key].name} mehr!`); return; }
+  gs.inv[key]--;
+  vegPrepped[key] = (vegPrepped[key]||0) + 1;
+  buildVegGrid();
+  // auto-add to assembly if pide is there
+  if(asm.hasPide && asm.meatAmt > 0){
+    asmAddVeg(key);
+  }
+}
+
+function asmAddVeg(key) {
+  if(!asm.hasPide){ toast('🫓 Erst Pide!'); return; }
+  if(asm.meatAmt === 0){ toast('🥩 Erst Fleisch!'); return; }
+  if(asm.folded){ toast('Bereits eingewickelt!'); return; }
+  if((vegPrepped[key]||0) <= 0){ toast(`✂️ ${VEGS[key].name} zuerst schneiden!`); return; }
+  if(asm.veggies.filter(v=>v===key).length >= 1){ toast('Genug davon!'); return; }
+  vegPrepped[key]--;
+  asm.veggies.push(key);
+  buildVegGrid();
+  updateAssemblyUI();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SAUCE BOTTLES
+// ═══════════════════════════════════════════════════════════════
+function buildSauceBottles() {
+  const area = document.getElementById('sauce-bottles');
+  area.innerHTML = '';
+  Object.entries(SAUCES).forEach(([key, sauce]) => {
+    if(sauce.locked) return;
+    const inv = gs.inv['sauce_'+key] || 0;
+    const btn = document.createElement('div');
+    btn.className = 'sauce-bottle' + (selectedSauce===key?' selected':'');
+    btn.id = 'saucebottle-'+key;
+    btn.style.background = sauce.color;
+    btn.style.borderColor = sauce.border;
+    btn.innerHTML = `
+      <div class="sauce-bottle-top"></div>
+      <div class="sauce-label">${sauce.label}<br>${inv}</div>
+      <div class="sauce-level" style="background:${sauce.border};height:${inv/80*50}px"></div>
+    `;
+    btn.onclick = () => selectSauce(key);
+    area.appendChild(btn);
+  });
+}
+
+function selectSauce(key) {
+  if((gs.inv['sauce_'+key]||0) <= 0){ toast('❌ Soße leer!'); return; }
+  selectedSauce = selectedSauce===key ? null : key;
+  document.getElementById('sauce-sel-label').textContent = selectedSauce ? SAUCES[selectedSauce].name+' ausgewählt' : '— keine ausgewählt —';
+  buildSauceBottles();
+  updateAssemblyUI();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SPIT / MEAT
+// ═══════════════════════════════════════════════════════════════
+function sliceMeat() {
+  if(gs.inv.meat <= 0){ toast('❌ Kein Fleisch! Shop öffnen.'); return; }
+  const amt = gs.knifeUpgrade ? 3 : 1;
+  gs.inv.meat = Math.max(0, gs.inv.meat - 1);
+  meatReady = Math.min(meatReady + amt, 5);
+  document.getElementById('mc-num').textContent = gs.inv.meat;
+  document.getElementById('meat-badge').classList.toggle('show', meatReady > 0);
+  toast('🥩 Fleisch geschnitten!');
+
+  // if pide is in assembly, auto-add meat
+  if(asm.hasPide && meatReady > 0 && asm.meatAmt < 3){
+    asmAddMeat();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GRILL
+// ═══════════════════════════════════════════════════════════════
+const grillDuration = () => GRILL_DURATION / [1,1.5,3][gs.grillLevel-1];
+
+function addPideToGrill() {
+  if(gs.inv.pide <= 0){ toast('❌ Kein Pide! Shop öffnen.'); return; }
+  const freeSlot = grill.slots.findIndex(s=>s===null);
+  if(freeSlot===-1){ toast('Grill ist voll!'); return; }
+  gs.inv.pide--;
+  grill.slots[freeSlot] = { toast: 0, ready: false, startedAt: performance.now() };
+  document.getElementById('btn-add-pide').disabled = grill.slots.every(s=>s!==null);
+  document.getElementById('btn-take-pide').disabled = !grill.slots.some(s=>s&&s.ready);
+}
+
+function takePideFromGrill() {
+  const readyIdx = grill.slots.findIndex(s=>s&&s.ready&&s.toast<100);
+  if(readyIdx===-1){ toast('Kein Pide fertig!'); return; }
+  grill.slots[readyIdx] = null;
+  document.getElementById('btn-add-pide').disabled = false;
+  document.getElementById('btn-take-pide').disabled = !grill.slots.some(s=>s&&s.ready&&s.toast<100);
+  document.getElementById('pide-badge').classList.remove('show');
+  asmAddPide();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ASSEMBLY ACTIONS
+// ═══════════════════════════════════════════════════════════════
+function asmAddPide() {
+  if(asm.hasPide){ toast('Bereits Pide drin!'); return; }
+  if(!grill.slots.some(s=>s&&s.ready&&s.toast<100)){
+    toast('🫓 Erst Pide auf den Grill legen!'); return;
+  }
+  asm.hasPide = true;
+  updateAssemblyUI();
+}
+
+function asmAddMeat() {
+  if(!asm.hasPide){ toast('🫓 Erst Pide einlegen!'); return; }
+  if(asm.folded){ return; }
+  if(meatReady <= 0){ toast('✂️ Erst Fleisch schneiden!'); return; }
+  if(asm.meatAmt >= 3){ toast('Genug Fleisch!'); return; }
+  meatReady--;
+  asm.meatAmt++;
+  document.getElementById('meat-badge').classList.toggle('show', meatReady > 0);
+  updateAssemblyUI();
+}
+
+function asmToggleSauce() {
+  if(!asm.hasPide){ toast('🫓 Erst Pide!'); return; }
+  if(!selectedSauce){ toast('Soße auswählen!'); return; }
+  if((gs.inv['sauce_'+selectedSauce]||0)<=0){ toast('❌ Soße leer!'); return; }
+  asm.sauce = selectedSauce;
+  gs.inv['sauce_'+selectedSauce] = Math.max(0,(gs.inv['sauce_'+selectedSauce]||0)-5);
+  buildSauceBottles();
+  updateAssemblyUI();
+}
+
+function asmFold() {
+  if(!asm.hasPide||asm.meatAmt===0){ toast('Döner noch nicht fertig!'); return; }
+  asm.folded = true;
+  updateAssemblyUI();
+}
+
+function clearAssembly() {
+  Object.assign(asm,{hasPide:false,meatAmt:0,veggies:[],sauce:null,folded:false});
+  Object.keys(vegPrepped).forEach(k=>vegPrepped[k]=0);
+  meatReady = 0;
+  document.getElementById('meat-badge').classList.remove('show');
+  buildVegGrid();
+  updateAssemblyUI();
+}
+
+function updateAssemblyUI() {
+  // step list
+  if(!customer){ renderStepList([]); }
+
+  // action buttons
+  const hasPideReady = grill.slots.some(s=>s&&s.ready&&s.toast<100);
+  document.getElementById('btn-pide').disabled  = asm.hasPide || !hasPideReady;
+  document.getElementById('btn-meat').disabled  = !asm.hasPide || asm.meatAmt>=3 || meatReady<=0 || asm.folded;
+  document.getElementById('btn-sauce').disabled = !asm.hasPide || !selectedSauce || (gs.inv['sauce_'+selectedSauce]||0)<=0 || asm.folded;
+  document.getElementById('btn-fold').disabled  = !asm.hasPide || asm.meatAmt===0 || asm.folded;
+  document.getElementById('btn-serve').disabled = !asm.folded || !customer;
+
+  // sauce button label
+  document.getElementById('btn-sauce').textContent = asm.sauce
+    ? '✅ '+SAUCES[asm.sauce].name+' drauf' : '🫙 Soße gießen';
+
+  if(customer) updateOrderChips();
+}
+
+function renderStepList(steps) {
+  const list = document.getElementById('step-list');
+  if(!steps.length){ list.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:11px">Kein Kunde</div>'; return; }
+  list.innerHTML = steps.map(s=>`
+    <div class="step-item ${s.state}">
+      <div class="step-dot"></div>
+      ${s.text}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CUSTOMER SYSTEM
+// ═══════════════════════════════════════════════════════════════
+const SPAWN_DELAY = () => [28,20,13,8][gs.shopLevel-1]*1000;
+const PATIENCE_DUR = () => [22,26,32,40][gs.grillLevel-1]*1000;
+
+function generateOrder() {
+  const availVeg = Object.keys(VEGS).filter(k=>!VEGS[k].locked&&(gs.inv[k]||0)>0);
+  const availSauce = Object.keys(SAUCES).filter(k=>!SAUCES[k].locked&&(gs.inv['sauce_'+k]||0)>0);
+  const numVeg = 1 + Math.floor(Math.random()*Math.min(3,availVeg.length));
+  const vegs = [...availVeg].sort(()=>Math.random()-.5).slice(0,numVeg);
+  const sauce = availSauce.length ? availSauce[Math.floor(Math.random()*availSauce.length)] : 'white';
+  return { meat: true, pide: true, veggies: vegs, sauce };
+}
+
+function spawnCustomer() {
+  if(customer) return;
+  clearInterval(nextCustInterval);
+  const name   = NAMES[Math.floor(Math.random()*NAMES.length)];
+  const emoji  = EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+  const order  = generateOrder();
+  const phrase = QUIPS[Math.floor(Math.random()*QUIPS.length)];
+  customer = { name, emoji, order, phrase };
+  patiencePct = 100;
+
+  const sprite = document.getElementById('cust-sprite');
+  sprite.textContent = emoji;
+  sprite.className = 'walkin';
+  document.getElementById('bubble').style.display='block';
+  document.getElementById('bname').textContent = name;
+  document.getElementById('btext').textContent = phrase;
+  document.getElementById('order-card').style.display='block';
+  document.getElementById('no-cust').style.display='none';
+  document.getElementById('next-cust-row').style.display='none';
+  updateOrderChips();
+  updateAssemblyUI();
+  buildStepList();
+
+  const dur = PATIENCE_DUR();
+  let elapsed = 0;
+  const step = 80;
+  patienceInterval = setInterval(()=>{
+    elapsed += step;
+    patiencePct = Math.max(0,100-(elapsed/dur)*100);
+    const pf = document.getElementById('pfill');
+    if(pf){
+      pf.style.width=patiencePct+'%';
+      pf.style.background=patiencePct>60?'#2ecc71':patiencePct>30?'#f39c12':'#e74c3c';
+    }
+    const basePrc = 4.5+(customer?.order?.veggies?.length||0)*.5;
+    const tipAmt = (basePrc*.3*(patiencePct/100)).toFixed(2);
+    const tl = document.getElementById('tip-lbl');
+    if(tl) tl.textContent='+€'+tipAmt+' Tip';
+    if(patiencePct<=0) customerAngry();
+  },step);
+}
+
+function buildStepList() {
+  if(!customer) return;
+  updateOrderChips();
+}
+
+function updateOrderChips() {
+  if(!customer) return;
+  const ord = customer.order;
+  const chips = document.getElementById('order-chips');
+  chips.innerHTML='';
+  // pide
+  const pOk = asm.hasPide;
+  chips.innerHTML+=`<div class="order-chip${pOk?' ok':''}">🫓 Pide</div>`;
+  // meat
+  const mOk = asm.meatAmt>0;
+  chips.innerHTML+=`<div class="order-chip${mOk?' ok':''}">🥩 Fleisch</div>`;
+  // vegs
+  ord.veggies.forEach(vk=>{
+    const ok = asm.veggies.includes(vk);
+    chips.innerHTML+=`<div class="order-chip${ok?' ok':''}">${VEGS[vk].emoji} ${VEGS[vk].name}</div>`;
+  });
+  // sauce
+  const sOk = asm.sauce===ord.sauce;
+  chips.innerHTML+=`<div class="order-chip${sOk?' ok':''}">${SAUCES[ord.sauce]?.label||'Soße'}</div>`;
+
+  // step list
+  const steps = [
+    {text:'Pide vom Grill', state: asm.hasPide?'done':grill.slots.some(s=>s)?'active':''},
+    {text:'Fleisch schneiden', state: asm.meatAmt>0?'done':meatReady>0?'active':''},
+    ...ord.veggies.map(vk=>({text:VEGS[vk].name+' vorbereiten', state:asm.veggies.includes(vk)?'done':(vegPrepped[vk]>0?'active':'')})),
+    {text:SAUCES[ord.sauce]?.name+' Soße', state:asm.sauce===ord.sauce?'done':selectedSauce===ord.sauce?'active':''},
+    {text:'Einwickeln', state:asm.folded?'done':asm.meatAmt>0&&asm.hasPide?'active':''},
+    {text:'Servieren', state:''},
+  ];
+  renderStepList(steps);
+}
+
+function checkOrderMatch() {
+  if(!customer||!asm.folded) return false;
+  const ord = customer.order;
+  if(!asm.hasPide||asm.meatAmt===0) return false;
+  for(const vk of ord.veggies){ if(!asm.veggies.includes(vk)) return false; }
+  return true;
+}
+
+function serveDoner() {
+  if(!customer||!asm.folded){ toast('Döner erst fertig machen!'); return; }
+  const ord = customer.order;
+  // calculate price
+  let base = 4.0 + ord.veggies.length*.6 + (gs.pideUpgrade?1:0);
+  if(asm.sauce===ord.sauce) base+=.5;
+  // check match bonus
+  const perfect = checkOrderMatch();
+  const tip = parseFloat((base*.35*(patiencePct/100)).toFixed(2));
+  const earned = parseFloat((base+(perfect?tip:0)).toFixed(2));
+
+  gs.money += earned;
+  gs.stats.served++;
+  gs.stats.happy++;
+  gs.stats.earned += earned;
+
+  if(perfect) toast(`✅ Perfekt! +€${earned.toFixed(2)}`);
+  else toast(`🥙 Serviert! +€${earned.toFixed(2)}`);
+  moneyFloat('+€'+earned.toFixed(2), '#2ecc71');
+
+  clearInterval(patienceInterval);
+  dismissCustomer();
+  clearAssembly();
+  updateHUD();
+  scheduleNextCustomer();
+}
+
+function customerAngry() {
+  clearInterval(patienceInterval);
+  gs.stats.angry++;
+  moneyFloat('😠 Gegangen!','#e74c3c',true);
+  dismissCustomer();
+  clearAssembly();
+  scheduleNextCustomer();
+}
+
+function dismissCustomer() {
+  customer = null;
+  const sprite=document.getElementById('cust-sprite');
+  sprite.style.transition='all .4s';
+  sprite.style.transform='translateX(80px)';
+  sprite.style.opacity='0';
+  setTimeout(()=>{
+    sprite.textContent='🚶';sprite.style.transform='';sprite.style.opacity='1';sprite.style.transition='';
+    document.getElementById('bubble').style.display='none';
+    document.getElementById('order-card').style.display='none';
+    document.getElementById('no-cust').style.display='block';
+    document.getElementById('next-cust-row').style.display='block';
+  },450);
+  document.getElementById('btn-serve').disabled=true;
+  renderStepList([]);
+}
+
+function scheduleNextCustomer() {
+  if(nextCustTimer) clearTimeout(nextCustTimer);
+  if(nextCustInterval) clearInterval(nextCustInterval);
+  const delay = SPAWN_DELAY();
+  let elapsed2=0;
+  nextCustInterval = setInterval(()=>{
+    elapsed2+=80;
+    const pct=Math.min(100,(elapsed2/delay)*100);
+    const nf=document.getElementById('ncf');
+    if(nf) nf.style.width=pct+'%';
+  },80);
+  nextCustTimer = setTimeout(()=>{ clearInterval(nextCustInterval); spawnCustomer(); }, delay);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SHOP
+// ═══════════════════════════════════════════════════════════════
+function openShop(){
+  document.getElementById('shop-modal').classList.add('open');
+  renderShop();
+}
+function closeShop(){
+  document.getElementById('shop-modal').classList.remove('open');
+  buildVegGrid(); buildSauceBottles();
+}
+function openInfo(){
+  toast('W=Gas A=Links D=Rechts S=Bremse — lies die Stationsbezeichnungen!');
+}
+
+function renderShop(){
+  document.getElementById('sh-money').textContent='💰 €'+gs.money.toFixed(2);
+  const body=document.getElementById('shop-body');
+  body.innerHTML='';
+
+  // Restock
+  const restockItems=[
+    {key:'meat', emoji:'🥩', name:'Döner-Fleisch', price:5, amt:30},
+    {key:'pide', emoji:'🫓', name:'Pide',          price:4, amt:20},
+    {key:'lettuce', emoji:'🥬', name:'Salat',       price:2.5, amt:40},
+    {key:'tomato',  emoji:'🍅', name:'Tomate',      price:3,   amt:40},
+    {key:'onion',   emoji:'🧅', name:'Zwiebel',     price:2,   amt:40},
+    {key:'sauce_white',emoji:'🤍',name:'Knoblauchsoße',price:3,amt:50},
+    ...(SAUCES.hot.locked?[]:  [{key:'sauce_hot',  emoji:'🌶️',name:'Scharfe Soße',  price:3.5,amt:50}]),
+    ...(SAUCES.herb.locked?[]: [{key:'sauce_herb', emoji:'🌿',name:'Kräuter Soße',  price:4,  amt:50}]),
+    ...(VEGS.cabbage.locked?[]:[{key:'cabbage',    emoji:'🥦',name:'Rotkohl',       price:3,  amt:40}]),
+    ...(VEGS.corn.locked?[]:   [{key:'corn',       emoji:'🌽',name:'Mais',          price:3.5,amt:35}]),
+    ...(VEGS.pepper.locked?[]: [{key:'pepper',     emoji:'🫑',name:'Paprika',       price:3.5,amt:35}]),
+  ];
+
+  const rs=document.createElement('div');rs.className='shop-sec';
+  rs.innerHTML='<div class="shop-sec-ttl">📦 Nachkaufen</div>';
+  const rg=document.createElement('div');rg.className='shop-grid';
+  restockItems.forEach(it=>{
+    const cnt=gs.inv[it.key]||0;
+    const canBuy=gs.money>=it.price;
+    const card=document.createElement('div');card.className='scard';
+    card.innerHTML=`<div class="scard-icon">${it.emoji}</div><div class="scard-name">${it.name}</div><div class="scard-desc">Bestand: ${cnt} | +${it.amt}</div><div class="scard-price">€${it.price.toFixed(2)}</div><button class="sbuy restock"${canBuy?'':' disabled'} onclick="buyRestock('${it.key}',${it.price},${it.amt})">Kaufen</button>`;
+    rg.appendChild(card);
+  });
+  rs.appendChild(rg);body.appendChild(rs);
+
+  // Upgrades
+  const cats=[{key:'shop',ttl:'🏪 Laden-Upgrades'},{key:'equip',ttl:'⚙️ Ausrüstung'},{key:'ing',ttl:'🔓 Freischalten'}];
+  cats.forEach(cat=>{
+    const items=SHOP_ITEMS.filter(i=>i.cat===cat.key);
+    if(!items.length) return;
+    const sec=document.createElement('div');sec.className='shop-sec';
+    sec.innerHTML=`<div class="shop-sec-ttl">${cat.ttl}</div>`;
+    const g=document.createElement('div');g.className='shop-grid';
+    items.forEach(item=>{
+      const owned=gs.owned.has(item.id);
+      const reqMet=!item.req||gs.owned.has(item.req);
+      const canAfford=gs.money>=item.price;
+      let btnCls='sbuy',btnTxt=`Kaufen (€${item.price})`,dis=false;
+      if(owned){btnCls+=' owned';btnTxt='✅ Gekauft';dis=true;}
+      else if(!reqMet){btnTxt='🔒 Zuerst anderes kaufen';dis=true;}
+      else if(!canAfford){dis=true;}
+      const c=document.createElement('div');c.className='scard';
+      c.innerHTML=`<div class="scard-icon">${item.icon}</div><div class="scard-name">${item.name}</div><div class="scard-desc">${item.desc}</div>${!owned?`<div class="scard-price">€${item.price.toFixed(2)}</div>`:''}<button class="${btnCls}"${dis?' disabled':''} onclick="buyUpgrade('${item.id}')">${btnTxt}</button>`;
+      g.appendChild(c);
+    });
+    sec.appendChild(g);body.appendChild(sec);
+  });
+}
+
+function buyRestock(key,price,amt){
+  if(gs.money<price){toast('❌ Nicht genug Geld!');return;}
+  gs.money-=price;
+  gs.inv[key]=(gs.inv[key]||0)+amt;
+  toast('✅ Aufgefüllt!');
+  updateHUD();renderShop();
+}
+
+function buyUpgrade(id){
+  const item=SHOP_ITEMS.find(i=>i.id===id);
+  if(!item||gs.owned.has(id)||gs.money<item.price){return;}
+  gs.money-=item.price;
+  gs.owned.add(id);
+  // apply
+  if(id==='up_shop2'){gs.shopLevel=2;toast('🏪 Kleiner Laden!');}
+  else if(id==='up_shop3'){gs.shopLevel=3;toast('🏬 Großer Laden!');}
+  else if(id==='up_shop4'){gs.shopLevel=4;toast('🏢 Döner Palast!');}
+  else if(id==='up_grill2'){gs.grillLevel=2;toast('🔥 Profi-Grill!');}
+  else if(id==='up_grill3'){gs.grillLevel=3;toast('⚡ Turbo-Grill!');}
+  else if(id==='up_knife'){gs.knifeUpgrade=true;toast('🔪 Profi-Messer!');}
+  else if(id==='up_pide'){gs.pideUpgrade=true;toast('🫓 Premium Pide!');}
+  else if(item.unlocks){
+    if(SAUCES[item.unlocks]){SAUCES[item.unlocks].locked=false;gs.inv['sauce_'+item.unlocks]=50;}
+    if(VEGS[item.unlocks]){VEGS[item.unlocks].locked=false;gs.inv[item.unlocks]=40;}
+    toast('🔓 Freigeschaltet!');
+  }
+  updateHUD();renderShop();
+  buildVegGrid();buildSauceBottles();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HUD
+// ═══════════════════════════════════════════════════════════════
+function updateHUD(){
+  document.getElementById('h-money').textContent='€'+gs.money.toFixed(2);
+  document.getElementById('h-level').textContent=LEVEL_NAMES[gs.shopLevel]||'Kiosk';
+  document.getElementById('h-served').textContent=gs.stats.served;
+  document.getElementById('h-happy').textContent=gs.stats.happy;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOASTS / FLOATS
+// ═══════════════════════════════════════════════════════════════
+function toast(msg){
+  const el=document.createElement('div');el.className='toast';el.textContent=msg;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),2700);
+}
+function moneyFloat(msg,color){
+  const el=document.createElement('div');el.className='mfloat';
+  el.textContent=msg;el.style.color=color;
+  el.style.left=(30+Math.random()*40)+'%';el.style.top='40%';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1900);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN RENDER LOOP
+// ═══════════════════════════════════════════════════════════════
+let last=0;
+function loop(now){
+  const dt=(now-last)/1000;last=now;
+  spitAngle+=dt*1.8;
+
+  // update grill
+  const dur=grillDuration();
+  let anyReady=false;
+  grill.slots.forEach((slot,i)=>{
+    if(!slot||slot.toast>=105) return;
+    slot.toast=Math.min(110,slot.toast+(dt/dur)*100);
+    if(slot.toast>=100&&!slot.ready){
+      slot.ready=true;anyReady=true;
+      document.getElementById('pide-badge').classList.add('show');
+    }
+  });
+  document.getElementById('btn-take-pide').disabled=!grill.slots.some(s=>s&&s.ready&&s.toast<105);
+  document.getElementById('btn-add-pide').disabled=grill.slots.every(s=>s!==null);
+
+  // draw
+  drawSpit();
+  drawGrill();
+  drawAssembly();
+  if(customer) updateAssemblyUI();
+
+  requestAnimationFrame(loop);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+buildVegGrid();
+buildSauceBottles();
+updateHUD();
+renderStepList([]);
+scheduleNextCustomer();
+requestAnimationFrame(t=>{last=t;loop(t);});
+</script>
+</body>
+</html>
